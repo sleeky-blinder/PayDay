@@ -1,0 +1,5 @@
+# Everything in this repo is served publicly once deployed.
+# Backups contain real balances — keep them out.
+*backup*.json
+seed/
+.DS_Store

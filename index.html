@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en-NG">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Payday</title>
+<meta name="description" content="pHiLo's payday routine — record, move, reconcile.">
+<meta name="theme-color" content="#F7F7F5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#151614" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Payday">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="app.css?v20260912-52254">
+</head>
+<body>
+<div class="wrap">
+<header class="hero card">
+  <div class="hero-main">
+    <div class="hero-text"><h1>Payday</h1></div>
+    <div class="hero-side"><span class="date-pill" id="today">—</span><span class="sync" id="sync"><i></i>saved on this device</span></div>
+  </div>
+  <div class="hero-meta" id="heroMeta"></div>
+</header>
+
+<div class="card signin" id="signin" hidden>
+  <div class="card-b">
+    <h2>Sign in to sync</h2>
+    <p class="muted">One email link. Your entries then follow you between phone and laptop.</p>
+    <form id="signinForm" class="signin-form">
+      <input type="email" id="signinEmail" placeholder="you@example.com" autocomplete="email" required>
+      <button class="btn pri" type="submit">Send sign-in link</button>
+    </form>
+    <p class="small muted" id="signinMsg"></p>
+    <button class="btn ghost sm" type="button" id="signinSkip">Continue on this device only</button>
+  </div>
+</div>
+<nav class="tabs card" role="tablist" aria-label="Sections"><button role="tab" data-view="today" class="t-today"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span>Today</span><span class="bdg" id="bdg-today" hidden>0</span></button><button role="tab" data-view="move" class="t-move"><svg viewBox="0 0 24 24"><path d="M4 8h13M13 4l4 4-4 4M20 16H7M11 12l-4 4 4 4"/></svg><span>Move</span><span class="bdg" id="bdg-move" hidden>0</span></button><button role="tab" data-view="ledger" class="t-ledger"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM9 9h6M9 13h6M9 17h4"/></svg><span>Ledger</span></button><button role="tab" data-view="pots" class="t-pots"><svg viewBox="0 0 24 24"><path d="M6 9h12l-1 11H7zM9 9V6a3 3 0 0 1 6 0v3"/></svg><span>Pots</span></button><button role="tab" data-view="settings" class="t-you"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c.8-3.7 3.8-5.6 7.5-5.6s6.7 1.9 7.5 5.6"/></svg><span>You</span></button></nav>
+
+<!-- TODAY -->
+<section class="view" id="v-today" role="tabpanel">
+  <div class="stack">
+    <div class="card banner" id="needsCard" data-open="1"><div class="card-h"><h3>Needs you</h3><span class="src" id="needsSub"></span><span class="pill neutral" id="promptCount">0</span></div><div class="rows" id="prompts"></div></div>
+    <div class="two">
+      <div class="stack">
+        <div class="card"><div class="card-h"><h3>Add an expense</h3><span class="src" id="quickHint"></span></div>
+          <form class="form exp" id="quickForm">
+            <div class="f"><label class="lbl" for="qAmt">Amount ₦</label><input class="num" id="qAmt" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0" required></div>
+            <div class="f"><label class="lbl" for="qCat">Category</label><select id="qCat"></select></div>
+            <div class="f"><label class="lbl" for="qFrom">Paid from</label><select id="qFrom"></select></div>
+            <div class="f"><label class="lbl" for="qDate">Date</label><input id="qDate" type="date" required></div>
+            <div class="f"><label class="lbl" for="qHow">How</label><select id="qHow"><option value="transfer">Transfer</option><option value="card">Card</option><option value="cash">Cash</option></select></div>
+            <div class="f"><label class="lbl" for="qNote">Note</label><input id="qNote" placeholder="What was it?"></div>
+            <div class="actions"><button class="btn pri" type="submit">Add expense</button></div>
+          </form></div>
+        <div class="card" id="billsCard"><div class="card-h"><h3>Fixed monthly</h3><span class="src">Tick when charged — recorded from the account it is billed to</span></div><div class="rows" id="subs"></div><div class="foot" id="subsFoot"></div></div>
+        <div class="card"><div class="card-h"><h3>Where the money sits</h3><span class="src">Sheet balance · plan expects · reconcile when the app differs</span></div><div id="potGroups" class="gsets"></div></div>
+      </div>
+      <div class="stack">
+        <div class="card" id="runCard"></div>
+        <div class="card" id="recentCard" data-open="1"><div class="card-h"><h3>Recent activity</h3><button class="btn ghost sm" type="button" data-go="ledger">Ledger →</button></div><div class="rows" id="recent"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SPEND -->
+<!-- MOVE -->
+<section class="view" id="v-move" role="tabpanel">
+  <div class="view-head"><h2>Move</h2><span class="when" id="runWhen"></span></div>
+  <div class="stack">
+    <div class="card"><div class="card-h"><h3 id="runTitle">This run</h3><div class="act"><span class="small muted" id="runProg"></span><div class="seg" role="group" aria-label="Run"><button type="button" id="rPrev">‹</button><button type="button" id="rLabel" aria-pressed="true">—</button><button type="button" id="rNext">›</button></div></div></div>
+      <div id="runList" class="gsets"></div>
+      <div class="foot"><span>Done moves the money on this sheet — source down, destination up, bank charges added. Edit the amount first if the app did something different. Lines open two days before their date.</span></div></div>
+    <div class="card"><div class="card-h"><h3>One-offs</h3><span class="src">Dated moves outside the routine</span></div><div id="oneoffs"></div></div>
+    <div class="card"><div class="card-h"><h3>Custom move</h3><span class="src">Anything the plan didn't foresee. Above ₦100,000 and unplanned: write it down, wait two days.</span></div>
+      <form class="form" id="mvForm">
+        <div class="f"><label class="lbl" for="mvFrom">From</label><select id="mvFrom"></select></div>
+        <div class="f"><label class="lbl" for="mvTo">To</label><select id="mvTo"></select></div>
+        <div class="f"><label class="lbl" for="mvAmt">Amount ₦</label><input class="num" id="mvAmt" type="number" inputmode="decimal" step="0.01" min="0" required></div>
+        <div class="f"><label class="lbl" for="mvDate">Date</label><input id="mvDate" type="date" required></div>
+        <div class="f"><label class="lbl" for="mvHow">How</label><select id="mvHow"><option value="">Work it out</option><option value="transfer">Bank transfer</option><option value="debit">Direct debit (Cowrywise pulls)</option><option value="inapp">In-app</option><option value="card">Card</option></select></div>
+        <div class="f s3"><label class="lbl" for="mvNote">Why</label><input id="mvNote" placeholder="Reason"></div>
+        <div class="actions"><button class="btn pri" type="submit">Add move</button></div>
+      </form></div>
+  </div>
+</section>
+
+<!-- LEDGER -->
+<section class="view" id="v-ledger" role="tabpanel">
+  <div class="view-head"><div><h2>Ledger</h2><div class="small muted">Every entry across every account — the book of record</div></div><div class="act"><input id="lgSearch" placeholder="Search notes" aria-label="Search"><select id="lgType" aria-label="Type"><option value="">All entries</option><option value="spend">Spending</option><option value="move">Moves between pots</option><option value="income">Income &amp; returns</option><option value="fees">Charges</option></select><select id="lgAcct"><option value="">All accounts</option></select><select id="lgMonth"><option value="">All months</option></select></div></div>
+  <div class="card" id="monthEnd"><div class="card-h"><h3 id="meTitle">By category</h3><span class="src" id="meSub"></span></div><div id="meBody"></div></div>
+  <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Date</th><th>From</th><th>To</th><th class="hide-m">Note</th><th class="r">Amount</th></tr></thead><tbody id="lgBody"></tbody></table></div><div class="foot" id="lgFoot"></div></div>
+</section>
+
+<!-- POTS -->
+<section class="view" id="v-pots" role="tabpanel">
+  <div class="view-head"><h2>Pots</h2><span class="when">Where each pot lives, what it is for, and what it may never pay for.</span></div>
+  <div class="stack">
+    <div class="card" data-open="1"><div class="card-h"><h3>Balances on a date</h3><span class="src">What every wallet held at the end of that day</span><div class="act"><input type="date" id="asOfDate" aria-label="Date"><button class="btn sm" type="button" id="asOfToday">Today</button></div></div><div class="gsets" id="asOfBody"></div><div class="foot" id="asOfFoot"></div></div>
+    <div class="card"><div class="card-h"><h3>Addresses and jobs</h3><span class="src">Where each pot lives and what it is for</span></div><div class="tbl-wrap"><table><thead><tr><th>Pot</th><th class="hide-m">Path in app</th><th>Job</th></tr></thead><tbody id="potsRef"></tbody></table></div></div>
+    <div class="card"><div class="card-h"><h3>If you want to spend on…</h3></div><div class="tbl-wrap">
+      <table><thead><tr><th>You want to…</th><th>Take it from</th><th class="hide-m">Why</th><th>Never from</th></tr></thead><tbody>
+        <tr><td>Eat, move, data, outings, clothes, internet</td><td><b>PocketApp</b></td><td class="hide-m">That is what the ₦750,000 is for.</td><td>Anywhere else</td></tr>
+        <tr><td>Pay rent (February)</td><td><b>HouseMoney</b></td><td class="hide-m">Built for this date. Free withdrawal on the due date.</td><td>Conservative, Dollars</td></tr>
+        <tr><td>Travel, phone, laptop, wedding gift, December</td><td><b>Life plan</b></td><td class="hide-m">₦1.8m a year. If it can't cover it, wait.</td><td>Emergency, Dollars, HouseMoney, credit</td></tr>
+        <tr><td>Medical bill, job loss, family emergency</td><td><b>Conservative</b> — first ₦2.5m</td><td class="hide-m">Liquid in 1–3 days; its only job.</td><td>Dollars, Equity Portfolio, Nest</td></tr>
+        <tr><td>A genuine opportunity</td><td><b>Conservative</b> — above ₦2.5m</td><td class="hide-m">Naira, liquid, not earmarked. Bigger than that waits for March.</td><td>The ₦2.5m, Dollars, Nest</td></tr>
+        <tr><td>Help Dad or Light beyond the monthly</td><td><b>Life plan</b></td><td class="hide-m">Planned generosity, same cap.</td><td>Nest — it is hers</td></tr>
+        <tr><td>Bet on football</td><td><b>Stocks sleeve</b> — only what is already there</td><td class="hide-m">A 4-fold acca is roughly −20% expected value.</td><td>Pocket, anything else</td></tr>
+        <tr><td>Anything from Dollars, Equity Portfolio or Nest</td><td>—</td><td class="hide-m">Not spending pots. March review, or an emergency after Conservative is exhausted.</td><td>—</td></tr>
+      </tbody></table></div></div>
+    <div class="grid2">
+      <div class="card"><div class="card-h"><h3>Rules</h3></div>
+        <ol class="rules">
+          <li>Money moves on payday and on the 1st. Between those dates, nothing moves.</li>
+          <li>Flex holds nothing overnight.</li>
+          <li>No new money into the Equity Portfolio until it is under 25% of the whole.</li>
+          <li>Speculative sleeve: ₦120,000/mo cap, never topped up after a loss.</li>
+          <li>Nothing gets locked again.</li>
+          <li><b>48-hour rule:</b> any unplanned move above ₦100,000 is written down and waits two days.</li>
+          <li>Compare naira to naira and dollars to dollars — never across.</li>
+          <li>The dollar sleeve stays in two places — PiggyVest and Cowrywise.</li>
+        </ol></div>
+      <div class="card"><div class="card-h"><h3>Not yet settled</h3><span class="src">One-offs, ranked by size</span></div><div class="tbl-wrap">
+        <table><tbody id="gaps">
+          <tr data-k="tax"><td class="i"><input class="chk" type="checkbox" aria-label="Tax"></td><td><b>Tax on three incomes</b><span class="why">~5% withheld at source vs ≈₦8.87m/yr liability under the 2026 bands — gap ≈₦6.8m/yr if assessed. Parked to <b>1 Dec</b>: book the accountant (TIN, LIRS e-Tax check, WHT credit notes, self-assessment by 31 March).</span></td></tr>
+          <tr data-k="pension"><td class="i"><input class="chk" type="checkbox" aria-label="Pension"></td><td><b>Pension — none from any employer</b><span class="why">Voluntary contributions are deductible at your 23% marginal rate: ₦500k/mo saves ≈₦1.38m/yr in tax. Decide the amount with the accountant.</span></td></tr>
+          <tr data-k="hmo"><td class="i"><input class="chk" type="checkbox" aria-label="Health insurance"></td><td><b>Health insurance</b><span class="why">Covered ✓ — AXA Mansard MNL Gold L plan through the Zenith job. Still open: the cover ends with that contract, and it covers you, not Dad or Light.</span></td></tr>
+          <tr data-k="life"><td class="i"><input class="chk" type="checkbox" aria-label="Life cover"></td><td><b>Life cover</b><span class="why">Dad and Light depend on this income. Two quotes; premium from Life.</span></td></tr>
+          <tr data-k="nok"><td class="i"><input class="chk" type="checkbox" aria-label="Next of kin"></td><td><b>Next of kin, beneficiaries, one-page will</b><span class="why">Next of kin set ✓ on all apps. Still open: one signed page naming who gets what, including the Nest (it is legally in your name).</span></td></tr>
+          <tr data-k="sec"><td class="i"><input class="chk" type="checkbox" aria-label="Account security"></td><td><b>Account security</b><span class="why">App-based 2FA · unique passwords · SIM lock · transaction limits sized to the routine · never approve an OTP you didn't trigger.</span></td></tr>
+          <tr data-k="rent"><td class="i"><input class="chk" type="checkbox" aria-label="Rent increase"></td><td><b>Rent increase</b><span class="why">Closed ✓ — landlord confirmed no increase. HouseMoney target stays ₦2,000,000.</span></td></tr>
+          <tr data-k="dom"><td class="i"><input class="chk" type="checkbox" aria-label="Domiciliary account"></td><td><b>Domiciliary account</b><span class="why">Dangote dividends are proposed in dollars. Open one at Zenith after listing.</span></td></tr>
+          <tr data-k="fees"><td class="i"><input class="chk" type="checkbox" aria-label="Equity fees"></td><td><b>Equity Portfolio fees</b><span class="why">Four active funds, ~₦70–100k/yr. March review: compare with an NGX 30 ETF.</span></td></tr>
+        </tbody></table></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- PLAN -->
+<section class="view" id="v-plan" role="tabpanel">
+  <div class="subnav" role="tablist" aria-label="You"><button type="button" data-go="settings" data-sub-view="settings">Settings</button><button type="button" data-go="plan" data-sub-view="plan">Plan</button><button type="button" data-go="goals" data-sub-view="goals">Goals</button></div>
+  <div class="view-head"><div class="seg" role="group" aria-label="Period" id="phaseSeg"></div></div>
+  <p class="small muted" style="margin:0 0 12px">Salaries land on the last day of the month; the routine runs on the 1st (Cowrywise debits on the 2nd). The highlighted column is the one in force. Amounts come from the rules under Settings — edit them there and this table, the Move tab and the projections all follow.</p>
+  <div class="stack" id="planTables"></div>
+  <div class="stack" style="margin-top:14px">
+    <div class="grid2">
+      <div class="card"><div class="card-h"><h3>Edits calendar</h3><span class="src">Four edits a year</span></div><div class="tbl-wrap"><table><tbody>
+        <tr><td class="num">1–2 Oct</td><td>First manual buys: Flex Dollar ₦300k · Dollar Portfolio ₦780k · Dangote 1,000 shares. Then switch on both automations.</td></tr>
+        <tr><td class="num">1 Dec</td><td>Book the accountant. After the run: Cowrywise Conservative → ₦705k, Dollar → ₦705k.</td></tr>
+        <tr><td class="num">~8 Dec</td><td>PiggyBank free window: ₦2,631,000 → Flex → Nest 790k · Flex Dollar 500k · Dollar Portfolio 1,341k.</td></tr>
+        <tr><td class="num">1 Jan</td><td>Create <b>Life</b> with ₦150k by hand, then auto-invest for the 2nd.</td></tr>
+        <tr><td class="num">Feb</td><td>Pay ₦2m rent from HouseMoney. After the 1 Feb run: HouseMoney → ₦167k, Flex Dollar → ₦533k.</td></tr>
+        <tr><td class="num">Mar</td><td><b>Review #1.</b> Export the JSON and send it.</td></tr>
+        <tr><td class="num">After 1 Apr</td><td>Conservative → ₦645k · Dollar → ₦645k · start the ₦120k Stocks order.</td></tr>
+      </tbody></table></div></div>
+    </div>
+    <div class="card"><div class="card-h"><h3>When life doesn't follow the sheet</h3></div><div class="tbl-wrap"><table><tbody>
+      <tr><td><b>Salary late or missing</b></td><td>Pocket cushion, then the Conservative reserve <em>above</em> ₦2.5m. Skip that salary's block; don't reshuffle the others.</td></tr>
+      <tr><td><b>Real emergency</b></td><td>Conservative → withdraw (1–3 days). Refill it with the Dollar Portfolio line at the next run until whole.</td></tr>
+      <tr><td><b>Bonus, 13th month, gift</b></td><td>Straight to the dollar sleeve, split Flex Dollar / Dollar Portfolio. Add it as a custom move.</td></tr>
+      <tr><td><b>A salary changes</b></td><td>Edit the salary and the lines on Settings. Allowance stays ₦750,000 unless decided otherwise — a raise is invested by default.</td></tr>
+      <tr><td><b>Dangote allotment scaled down</b></td><td>Refund lands in Flex → Conservative the same day.</td></tr>
+      <tr><td><b>Naira strengthens, dollar lines look bad</b></td><td>Expected. That is what a hedge looks like in a good year. Do nothing.</td></tr>
+    </tbody></table></div></div>
+  </div>
+</section>
+
+<!-- GOALS -->
+<section class="view" id="v-goals" role="tabpanel">
+  <div class="subnav" role="tablist" aria-label="You"><button type="button" data-go="settings" data-sub-view="settings">Settings</button><button type="button" data-go="plan" data-sub-view="plan">Plan</button><button type="button" data-go="goals" data-sub-view="goals">Goals</button></div>
+  <div class="view-head"><div class="act"><label class="small muted" for="retSel">Assume returns</label><select id="retSel"><option value="0">0% (principal only)</option><option value="0.05">5% a year</option><option value="0.10">10% a year</option><option value="0.15">15% a year</option></select></div></div>
+  <div class="stack">
+    <div class="card"><div class="card-h"><h3>Plan vs actual, after each run</h3><span class="src" id="projNote"></span></div><div class="tbl-wrap">
+      <table><thead><tr><th>After</th><th class="r hide-m">Conservative</th><th class="r hide-m">Dollars</th><th class="r hide-m">HouseMoney</th><th class="r hide-m">Nest</th><th class="r">Plan</th><th class="r">Actual</th><th class="r">Gap</th></tr></thead><tbody id="projBody"></tbody></table></div></div>
+    <div class="card"><div class="card-h"><h3>Milestones</h3><span class="src" id="msNote"></span></div><div class="tbl-wrap"><table><thead><tr><th>When</th><th>What</th><th class="r">Tracked total</th></tr></thead><tbody id="msBody"></tbody></table></div><div class="foot"><span>Computed from today's balances and the plan lines, at the return assumption above. Dates move with your entries.</span></div></div>
+  </div>
+</section>
+
+<!-- SETTINGS -->
+<section class="view" id="v-settings" role="tabpanel">
+  <div class="subnav" role="tablist" aria-label="You"><button type="button" data-go="settings" data-sub-view="settings">Settings</button><button type="button" data-go="plan" data-sub-view="plan">Plan</button><button type="button" data-go="goals" data-sub-view="goals">Goals</button></div>
+  <div class="view-head"><span class="when">Everything the sheet assumes lives here. Change it here, and every tab follows.</span></div>
+  <div class="stack">
+    <div class="grid2">
+      <div class="card"><div class="card-h"><h3>Numbers the sheet uses</h3></div>
+        <form class="form" id="setForm">
+          <div class="f"><label class="lbl" for="sAllow">Monthly allowance ₦</label><input class="num" id="sAllow" type="number" step="1"></div>
+          <div class="f"><label class="lbl" for="sCushion">Pocket cushion ₦</label><input class="num" id="sCushion" type="number" step="1"></div>
+          <div class="f"><label class="lbl" for="sFloat">Zenith float ₦</label><input class="num" id="sFloat" type="number" step="1"></div>
+          <div class="f"><label class="lbl" for="sRate">₦ per $ today</label><input class="num" id="sRate" type="number" step="1"></div>
+          <div class="f"><label class="lbl" for="sEF">Emergency fund target ₦</label><input class="num" id="sEF" type="number" step="1"></div>
+          <div class="f"><label class="lbl" for="sRent">Rent target ₦</label><input class="num" id="sRent" type="number" step="1"></div>
+          <div class="f"><label class="lbl" for="sPosFee">POS agent fee ₦ per</label><div class="inline-act"><input class="num" id="sPosFee" type="number" step="10" aria-label="POS fee"><input class="num" id="sPosPer" type="number" step="1000" aria-label="POS band"></div></div>
+          <div class="f"><label class="lbl" for="sAtmFee">Other-bank ATM fee ₦ per</label><div class="inline-act"><input class="num" id="sAtmFee" type="number" step="10" aria-label="ATM fee"><input class="num" id="sAtmPer" type="number" step="1000" aria-label="ATM band"></div></div>
+          <div class="actions"><button class="btn pri" type="submit">Save</button></div>
+        </form></div>
+      <div class="card"><div class="card-h"><h3>Backup</h3><span class="src" id="storeWhere"></span></div>
+        <div class="card-b stack">
+          <div class="act"><button class="btn" type="button" id="btnExport">Download backup</button><label class="btn" for="fileImport">Import a backup file</label><input type="file" id="fileImport" accept="application/json,.json" hidden><button class="btn ghost" type="button" id="btnShowJson">Show JSON</button><button class="btn ghost" type="button" id="btnImport">Import pasted JSON</button></div><div class="acct-line" id="syncAcct" hidden></div><details class="sync-cfg" id="syncCfg"><summary>Sync connection (Supabase)</summary><div class="form" style="padding-inline:0"><div class="f wide"><label class="lbl" for="syncUrl">Project URL</label><input id="syncUrl" placeholder="https://xxxx.supabase.co" autocomplete="off"></div><div class="f wide"><label class="lbl" for="syncKey">Anon public key</label><input id="syncKey" placeholder="eyJhbGci…" autocomplete="off"></div><div class="actions"><button class="btn ghost" type="button" id="btnSyncClear">Disconnect</button><button class="btn pri" type="button" id="btnSyncSave">Save and reload</button></div></div></details>
+          <textarea id="jsonBox" placeholder="Paste a backup here, then Import." hidden></textarea>
+          <p class="small muted" style="margin:0">Send the JSON for a review — it carries every balance, rule and move.</p>
+        </div></div>
+    </div>
+    <div class="card"><div class="card-h"><h3>Salaries</h3><span class="src">Land on the last day of the month, exempt from stamp duty</span></div><div class="tbl-wrap"><table class="plan-ed"><thead><tr><th>Lands in</th><th>Amount ₦</th><th>Note</th><th></th></tr></thead><tbody id="salBody"></tbody></table></div><div class="foot"><span id="salTotal"></span><div class="act"><button class="btn sm" type="button" id="btnAddSal">Add salary</button><button class="btn sm pri" type="button" id="btnSaveSal">Save salaries</button></div></div></div>
+    <div class="card"><div class="card-h"><h3>Routine lines</h3><span class="src">One block per line of the run. Amounts by phase as <i>YYYY-MM:amount</i>, comma-separated — the latest phase at or before the run applies. A line that runs only in certain months uses <i>Only in</i> instead.</span></div><div id="linesBody" class="lines"></div>
+      <div class="foot"><span id="linesCheck"></span><div class="act"><button class="btn sm" type="button" id="btnAddLine">Add line</button><button class="btn sm pri" type="button" id="btnSaveLines">Save routine</button></div></div></div>
+    <div class="card"><div class="card-h"><h3>One-offs</h3><span class="src">Dated moves outside the routine</span></div><div id="oneBody" class="lines"></div>
+      <div class="foot"><span></span><div class="act"><button class="btn sm" type="button" id="btnAddOne">Add one-off</button><button class="btn sm pri" type="button" id="btnSaveOne">Save one-offs</button></div></div></div>
+    <div class="card"><div class="card-h"><h3>Bank charges the sheet adds by itself</h3><span class="src">Nigeria Tax Act 2025 · CBN Guide to Charges · in force from 1 Jan 2026</span></div><div class="tbl-wrap"><table><thead><tr><th>Account</th><th>₦50 stamp duty on transfers ≥ ₦10,000</th><th>Transfer fee ₦10.75 / 26.88 / 53.75</th><th>SMS alert ₦4.30 per debit</th><th>Stamp duty on Cowrywise debits</th></tr></thead><tbody id="feesBody"></tbody></table></div>
+      <div class="foot"><span>Sender pays since 1 Jan 2026. Card payments, in-app moves, salary receipts and own-account transfers within one bank carry no charge. Charges are recorded as separate <i>Bank charges</i> lines tied to the move; deleting the move deletes them.</span></div></div>
+    <div class="card"><div class="card-h"><h3>Category limits</h3><span class="src">Optional. Leave blank for none; the sheet flags a category that passes its limit or runs 25% above its usual.</span></div><div class="line"><div class="line-grid" id="catBody"></div></div><div class="foot"><span class="small muted">Limits apply to the calendar month, all accounts combined.</span><button class="btn sm pri" type="button" id="btnSaveCats">Save limits</button></div></div>
+    <div class="card"><div class="card-h"><h3>Fixed monthly bills</h3><span class="src">What the Spend tab lists as "Fixed monthly"</span></div><div class="tbl-wrap"><table><thead><tr><th>Bill</th><th>Billed to</th><th class="hide-m">Category</th><th class="r">₦ / month</th><th></th></tr></thead><tbody id="billsBody"></tbody></table></div>
+      <form class="line" id="subForm" style="border-top:1px solid var(--line)"><div class="line-grid" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+        <div class="lf"><label class="lbl" for="sbName">New bill</label><input id="sbName" placeholder="Name" required></div>
+        <div class="lf"><label class="lbl" for="sbAmt">₦ / month</label><input class="num" id="sbAmt" type="number" step="1" min="1" required></div>
+        <div class="lf"><label class="lbl" for="sbFrom">Billed to</label><select id="sbFrom"></select></div>
+        <div class="lf"><label class="lbl" for="sbCat">Category</label><select id="sbCat"></select></div>
+      </div><div class="line-act"><span></span><button class="btn sm pri" type="submit">Add bill</button></div></form></div>
+    <div class="card"><div class="card-h"><h3>Opening balances — the anchor</h3><span class="src" id="anchorDate"></span></div><div class="line"><div class="line-grid" id="openBody"></div></div>
+      <div class="foot"><span>Prefer <i>Reconcile</i> on the Today tab — it records the difference as a dated line instead of rewriting history.</span><button class="btn sm" type="button" id="btnSaveOpen">Save openings</button></div></div>
+    <div class="card"><div class="card-h"><h3>Danger zone</h3></div><div class="card-b act"><button class="btn danger" type="button" id="btnWipe">Delete every entry and start from the anchor</button><button class="btn danger" type="button" id="btnResetPlan">Reset routine and one-offs to the original plan</button></div></div>
+  </div>
+</section>
+</div>
+<div class="sheet-bg" id="sheetBg"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"></div>
+<div class="toast" id="toast" role="status" hidden><span id="toastMsg"></span><button type="button" id="toastAct" hidden>Undo</button></div>
+
+<script src="config.js?v20260912-52254"></script>
+<script src="vendor/supabase.js?v20260912-52254"></script>
+<script src="app.js?v20260912-52254"></script>
+<script src="sync.js?v20260912-52254"></script>
+</body>
+</html>
