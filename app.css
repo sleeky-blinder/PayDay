@@ -510,7 +510,10 @@ select{padding-right:34px}
 .subnav+.view-head .act{margin-left:auto}
 
 /* ---------- app shell: phone ---------- */
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+body{overscroll-behavior-y:contain}
+button,.btn,nav.tabs button,.seg button,.subnav button{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+html.installed .sync-cfg{opacity:.9}
 body{padding-top:env(safe-area-inset-top)}
 .signin{max-width:440px;margin:20px auto 0}
 .signin h2{margin:0 0 6px;font-size:20px}

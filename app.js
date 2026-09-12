@@ -456,8 +456,22 @@ function saveFile(name,text){ var blob=new Blob([text],{type:'application/json'}
 function importText(txt){ try{ var j=JSON.parse(txt); if(!j.state) throw 0; if(!confirm('Replace everything in the app with this backup?')) return; adoptState(j.state); var entries=j.entries||[]; if(!entries.length&&j.ledger){ Object.keys(j.ledger).forEach(function(ym){ var m=j.ledger[ym]; (Array.isArray(m)?m:Object.keys(m).map(function(k){return m[k];})).forEach(function(t){ if(t&&!t.del) entries.push(t); }); }); } allTx().forEach(function(t){ tombstone(t.id); }); entries.forEach(function(t){ t.ts=Date.now(); putEntry(t); }); saveState(); render(); toast('Imported '+entries.length+' entries'); }catch(e){ toast('That is not a Payday backup'); } }
 el('fileImport').addEventListener('change',function(){ var f=this.files&&this.files[0]; if(!f) return; var r=new FileReader(); r.onload=function(){ importText(r.result); }; r.readAsText(f); this.value=''; });
 window.addEventListener('online',function(){ flush(); });
-var APP_VERSION='v20260912-54880';
+var APP_VERSION='v20260912-55519';
 el('appVer').textContent='Build '+APP_VERSION;
+/* install: offer it where the browser allows, explain it where it does not */
+var deferredInstall=null;
+function isStandalone(){ return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone===true; }
+function isIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1); }
+function showInstall(on){ var b=el('btnInstall'); if(b) b.hidden=!on; }
+window.addEventListener('beforeinstallprompt',function(ev){ ev.preventDefault(); deferredInstall=ev; if(!isStandalone()) showInstall(true); });
+window.addEventListener('appinstalled',function(){ deferredInstall=null; showInstall(false); toast('Payday installed — open it from your home screen or dock'); });
+el('btnInstall').addEventListener('click',function(){
+  if(deferredInstall){ deferredInstall.prompt(); deferredInstall.userChoice.then(function(c){ deferredInstall=null; if(c&&c.outcome==='accepted') showInstall(false); }); return; }
+  if(isIOS()) return toast('In Safari: tap Share, then Add to Home Screen','OK');
+  toast('In Chrome: the install icon in the address bar, or ⋮ → Install page as app','OK');
+});
+if(!isStandalone()&&isIOS()) showInstall(true);
+if(isStandalone()) document.documentElement.classList.add('installed');
 window.Payday={connectDb:connectDb,setSync:setSync,toast:toast,exportJSON:exportJSON,importText:importText};
 /* service worker: update notice */
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').then(function(reg){ reg.addEventListener('updatefound',function(){ var nw=reg.installing; nw&&nw.addEventListener('statechange',function(){ if(nw.state==='installed'&&navigator.serviceWorker.controller) toast('Payday updated','Reload',function(){ location.reload(); }); }); }); }).catch(function(){}); }

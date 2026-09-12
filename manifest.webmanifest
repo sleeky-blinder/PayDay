@@ -1,13 +1,18 @@
 {
+  "id": "./",
   "name": "Payday",
   "short_name": "Payday",
   "description": "pHiLo's payday routine \u2014 record, move, reconcile.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "orientation": "portrait",
   "background_color": "#F7F7F5",
-  "theme_color": "#1D5C4B",
+  "theme_color": "#F7F7F5",
   "lang": "en-NG",
   "icons": [
     {
@@ -25,6 +30,44 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Add an expense",
+      "short_name": "Expense",
+      "url": "./#today",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "This month's run",
+      "short_name": "Run",
+      "url": "./#move",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Ledger",
+      "short_name": "Ledger",
+      "url": "./#ledger",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }
