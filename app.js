@@ -377,14 +377,14 @@ function accCard(card,rootId,defaultOpen){ (function(){ if(card.classList.contai
 var tabs=document.querySelectorAll('nav.tabs button'), views=document.querySelectorAll('.view');
 var YOU={settings:1,plan:1,goals:1};
 function show(v){ if(!el('v-'+v)) v='today'; views.forEach(function(s){ s.classList.toggle('on', s.id==='v-'+v); }); var tv=YOU[v]?'settings':v; tabs.forEach(function(t){ t.setAttribute('aria-selected', t.dataset.view===tv?'true':'false'); }); document.querySelectorAll('[data-sub-view]').forEach(function(sb){ sb.setAttribute('aria-selected', sb.dataset.subView===v?'true':'false'); }); ls('pm-tab',v); if(v==='today') el('bdg-today').hidden=true; }
-tabs.forEach(function(t){ t.addEventListener('click',function(){ show(t.dataset.view); window.scrollTo({top:0}); }); });
+tabs.forEach(function(t){ t.addEventListener('click',function(){ show(t.dataset.view); scrollTop0(); }); });
 el('sheetBg').addEventListener('click',closeSheet);
 document.addEventListener('keydown',function(ev){ if(ev.key==='Escape') closeSheet(); if((ev.key==='Enter'||ev.key===' ')&&ev.target.classList&&ev.target.classList.contains('grp')){ ev.preventDefault(); ev.target.click(); } });
 document.addEventListener('click',function(ev){ var gh=ev.target.closest('.grp[data-grp]'); if(gh){ var open=!gh.classList.contains('open'); gh.classList.toggle('open',open); gh.setAttribute('aria-expanded',open); var body=gh.nextElementSibling; if(body) body.hidden=!open; ls('grp-'+gh.dataset.grp,open?'1':'0'); if(open) renderPotGroups(balances(),expected(TODAY)); return; }
   var b=ev.target.closest('button'); var row=ev.target.closest('[data-edit]');
   if(!b&&row){ openEdit(row.dataset.edit); return; }
   if(!b) return; var d=b.dataset;
-  if(d.go){ show(d.go); window.scrollTo({top:0}); }
+  if(d.go){ show(d.go); scrollTop0(); }
   else if(d.close){ closeSheet(); }
   else if(d.undo){ removeTx(d.undo,true); toast('Undone'); }
   else if(d.delentry){ closeSheet(); removeTx(d.delentry); }
@@ -456,7 +456,8 @@ function saveFile(name,text){ var blob=new Blob([text],{type:'application/json'}
 function importText(txt){ try{ var j=JSON.parse(txt); if(!j.state) throw 0; if(!confirm('Replace everything in the app with this backup?')) return; adoptState(j.state); var entries=j.entries||[]; if(!entries.length&&j.ledger){ Object.keys(j.ledger).forEach(function(ym){ var m=j.ledger[ym]; (Array.isArray(m)?m:Object.keys(m).map(function(k){return m[k];})).forEach(function(t){ if(t&&!t.del) entries.push(t); }); }); } allTx().forEach(function(t){ tombstone(t.id); }); entries.forEach(function(t){ t.ts=Date.now(); putEntry(t); }); saveState(); render(); toast('Imported '+entries.length+' entries'); }catch(e){ toast('That is not a Payday backup'); } }
 el('fileImport').addEventListener('change',function(){ var f=this.files&&this.files[0]; if(!f) return; var r=new FileReader(); r.onload=function(){ importText(r.result); }; r.readAsText(f); this.value=''; });
 window.addEventListener('online',function(){ flush(); });
-var APP_VERSION='v20260912-55519';
+function scrollTop0(){ var s=document.getElementById('scroll'); if(s&&s.scrollHeight>s.clientHeight) s.scrollTop=0; window.scrollTo(0,0); }
+var APP_VERSION='v20260912-56109';
 el('appVer').textContent='Build '+APP_VERSION;
 /* install: offer it where the browser allows, explain it where it does not */
 var deferredInstall=null;
