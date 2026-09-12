@@ -45,11 +45,27 @@
 
   function acctLine(email){ var box=q('#syncAcct'); if(!box) return; box.hidden=false; box.innerHTML='<span>Synced as <b>'+email+'</b></span><button class="btn sm ghost" type="button" id="btnSignOut">Sign out</button>'; q('#btnSignOut').addEventListener('click',function(){ client.auth.signOut().then(function(){ location.reload(); }); }); }
 
-  /* ---------- sign-in card ---------- */
-  function signinUI(){ var card=q('#signin'); if(!card) return; show(card,true);
-    var form=q('#signinForm'), msg=q('#signinMsg'), email=q('#signinEmail');
-    form.addEventListener('submit',function(ev){ ev.preventDefault(); var v=email.value.trim(); if(!v) return; msg.textContent='Sending…';
-      client.auth.signInWithOtp({email:v,options:{emailRedirectTo:location.origin+location.pathname}}).then(function(r){ if(r.error) throw r.error; msg.textContent='Link sent. Open it on this device and you will land back here, signed in.'; }).catch(function(e){ msg.textContent=e.message||'Could not send the link.'; }); });
+  /* ---------- sign-in card: email + password ---------- */
+  function authMsg(e){ var m=(e&&e.message)||String(e||'');
+    if(/Invalid login credentials/i.test(m)) return 'That email and password do not match an account here. If this is your first time, tap Create account.';
+    if(/User already registered/i.test(m)) return 'That account already exists — tap Sign in instead.';
+    if(/Password should be/i.test(m)) return 'Passwords need at least 6 characters.';
+    if(/Email .*not authorized|signups not allowed|Signups not allowed/i.test(m)) return 'This Supabase project has sign-ups disabled. Turn Email sign-ups back on under Authentication → Sign In / Providers.';
+    if(/Failed to fetch|NetworkError|Load failed/i.test(m)) return 'Could not reach Supabase. Check the project URL under Sync connection, and that you are online.';
+    if(/Invalid API key|JWT/i.test(m)) return 'Supabase rejected the key. Re-copy the anon public key under Sync connection.';
+    return m || 'Sign-in failed.';
+  }
+  function signinUI(){ var card=q('#signin'); if(!card||card.dataset.wired==='1'){ show(card,true); return; } card.dataset.wired='1'; show(card,true);
+    var form=q('#signinForm'), msg=q('#signinMsg'), email=q('#signinEmail'), pass=q('#signinPass'), mk=q('#signinNew');
+    function creds(){ var e=email.value.trim(), p=pass.value; if(!e||!p){ msg.textContent='Email and password, please.'; return null; } return {email:e,password:p}; }
+    form.addEventListener('submit',function(ev){ ev.preventDefault(); var c=creds(); if(!c) return; msg.textContent='Signing in…';
+      client.auth.signInWithPassword(c).then(function(r){ if(r.error) throw r.error; msg.textContent='Signed in.'; })
+        .catch(function(e){ msg.textContent=authMsg(e); }); });
+    mk.addEventListener('click',function(){ var c=creds(); if(!c) return; msg.textContent='Creating the account…';
+      client.auth.signUp(c).then(function(r){ if(r.error) throw r.error;
+        if(r.data&&r.data.session){ msg.textContent='Account created. You are signed in.'; }
+        else { msg.textContent='Account created, but this project still wants email confirmation. Turn Confirm email off under Authentication → Sign In / Providers → Email, then tap Sign in.'; } })
+        .catch(function(e){ msg.textContent=authMsg(e); }); });
     q('#signinSkip').addEventListener('click',function(){ show(card,false); App.setSync(false,'saved on this device'); localStorage.setItem('pm-skip-signin','1'); });
   }
 
@@ -58,7 +74,16 @@
     q('#btnSyncSave').addEventListener('click',function(){ var u=q('#syncUrl').value.trim(), k=q('#syncKey').value.trim(); if(!u||!k) return App.toast('Both fields are needed'); localStorage.setItem('pm-sync-cfg',JSON.stringify({url:u,key:k})); localStorage.removeItem('pm-skip-signin'); location.reload(); });
     q('#btnSyncClear').addEventListener('click',function(){ localStorage.removeItem('pm-sync-cfg'); location.reload(); }); }
 
-  if(!hasCfg){ App.setSync(false,'saved on this device'); var w=q('#storeWhere'); if(w) w.textContent='Saved on this device only — connect Supabase below to sync'; return; }
+  if(!hasCfg){ var w=q('#storeWhere');
+    if(cfg.url&&cfg.key&&!window.supabase){ /* configured, but the client library never loaded */
+      App.setSync(false,'sync library did not load');
+      if(w) w.textContent='Sync is set up, but vendor/supabase.js could not be loaded from this address — check that the vendor folder was uploaded with the app.';
+      App.toast('Sync off: vendor/supabase.js is missing from the server');
+    } else {
+      App.setSync(false,'saved on this device');
+      if(w) w.textContent='Saved on this device only — connect Supabase below to sync';
+    }
+    return; }
 
   client=window.supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
   App.setSync(false,'checking sign-in…');

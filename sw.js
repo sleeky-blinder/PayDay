@@ -1,6 +1,6 @@
 /* Payday service worker — app shell offline, network for everything else */
-var CACHE='payday-v20260912-52254';
-var SHELL=['./','./index.html','./app.css?v20260912-52254','./app.js?v20260912-52254','./sync.js?v20260912-52254','./config.js?v20260912-52254','./vendor/supabase.js?v20260912-52254','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/apple-touch-icon.png'];
+var CACHE='payday-v20260912-54397';
+var SHELL=['./','./index.html','./app.css?v20260912-54397','./app.js?v20260912-54397','./sync.js?v20260912-54397','./config.js?v20260912-54397','./vendor/supabase.js?v20260912-54397','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/apple-touch-icon.png'];
 self.addEventListener('install',function(e){ e.waitUntil(caches.open(CACHE).then(function(c){ return c.addAll(SHELL); }).then(function(){ return self.skipWaiting(); })); });
 self.addEventListener('activate',function(e){ e.waitUntil(caches.keys().then(function(keys){ return Promise.all(keys.filter(function(k){ return k!==CACHE; }).map(function(k){ return caches.delete(k); })); }).then(function(){ return self.clients.claim(); })); });
 self.addEventListener('fetch',function(e){ var url=new URL(e.request.url); if(e.request.method!=='GET') return;

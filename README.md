@@ -41,24 +41,27 @@ up on their next open and show a "Payday updated — Reload" notice.
 
 1. Create a project at supabase.com. Any region; Frankfurt or London is closest to Lagos.
 2. **SQL Editor → New query**, paste the contents of `supabase/schema.sql`, run it.
-3. **Authentication → Providers → Email**: leave Email enabled; you can turn off "Confirm email"
-   since sign-in is by link anyway.
-4. **Authentication → URL Configuration**: set *Site URL* to your Pages address
-   (`https://<you>.github.io/payday/`) and add it under *Redirect URLs* too.
-5. **Project Settings → API**: copy the *Project URL* and the *anon public* key.
+3. **Authentication → Sign In / Providers → Email**: keep Email enabled and turn **Confirm email**
+   off. Sign-in is an email and a password you choose; no email is ever sent, so nothing depends on
+   mail delivery.
+4. **Project Settings → API Keys**: copy the *Project URL* and the *anon public* key.
 6. Either paste them into `config.js` and push, or open the app, go to
    **Settings → Backup → Sync connection**, paste them there and tap *Save and reload*.
    The anon key is meant to be public; row-level security means each signed-in user only ever sees their own rows.
-7. Open the app, enter your email, tap the link that arrives. Do this once per device.
+5. Open the app, type your email and a password, tap **Create account**. On every other device, the
+   same email and password, tap **Sign in**.
 
 Without Supabase the app still works fully, saving on the device, with backup and restore under Settings.
 
 ## 3. Put it on your phone
 
-**iPhone**: open the address in Safari → Share → *Add to Home Screen*. Sign in from the installed app
-(the email link opens back into it).
+**iPhone**: open the address in **Safari** (not Chrome) → Share → *Add to Home Screen*. Adding it from
+any other browser makes a shortcut that reopens that browser instead of running as an app.
 
-**Android**: open the address in Chrome → the *Install* prompt, or ⋮ → *Add to Home screen*.
+**Android**: open the address in Chrome → the *Install* prompt, or ⋮ → *Install app*.
+
+If the icon opens a browser with an address bar, the manifest or icons were missing when you added it.
+Remove the icon and add it again.
 
 ## 4. Bring your data across
 

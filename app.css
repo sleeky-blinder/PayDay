@@ -514,8 +514,9 @@ html{-webkit-text-size-adjust:100%}
 body{padding-top:env(safe-area-inset-top)}
 .signin{max-width:440px;margin:20px auto 0}
 .signin h2{margin:0 0 6px;font-size:20px}
-.signin .signin-form{display:flex;gap:10px;margin:14px 0 8px;flex-wrap:wrap}
-.signin .signin-form input{flex:1 1 200px}
+.signin .signin-form{display:grid;gap:10px;margin:14px 0 10px}
+.signin .signin-act{display:flex;gap:10px;flex-wrap:wrap}
+.signin .signin-act .btn{flex:1 1 auto}
 .acct-line{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 24px;border-top:1px solid var(--line);font-size:14px}
 .sync-cfg{border-top:1px solid var(--line);padding:10px 24px 16px}
 .sync-cfg summary{cursor:pointer;color:var(--ink-2);font-size:13.5px;padding:6px 0}
