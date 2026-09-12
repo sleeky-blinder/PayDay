@@ -1,8 +1,8 @@
 /* Payday service worker.
    Network-first for our own files: an update always lands on the next open.
    Cache is the offline fallback only. Third-party assets are cache-first. */
-var CACHE='payday-v20260912-56109';
-var SHELL=['./','./index.html','./app.css?v20260912-56109','./app.js?v20260912-56109','./sync.js?v20260912-56109','./config.js?v20260912-56109','./vendor/supabase.js?v20260912-56109','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/apple-touch-icon.png'];
+var CACHE='payday-v20260912-57012';
+var SHELL=['./','./index.html','./app.css?v20260912-57012','./app.js?v20260912-57012','./sync.js?v20260912-57012','./config.js?v20260912-57012','./vendor/supabase.js?v20260912-57012','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/apple-touch-icon.png'];
 self.addEventListener('install',function(e){ e.waitUntil(caches.open(CACHE).then(function(c){ return c.addAll(SHELL); }).catch(function(){}).then(function(){ return self.skipWaiting(); })); });
 self.addEventListener('activate',function(e){ e.waitUntil(caches.keys().then(function(keys){ return Promise.all(keys.filter(function(k){ return k!==CACHE; }).map(function(k){ return caches.delete(k); })); }).then(function(){ return self.clients.claim(); })); });
 self.addEventListener('message',function(e){ if(e.data==='skipWaiting') self.skipWaiting(); });

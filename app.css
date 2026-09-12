@@ -529,6 +529,16 @@ label.btn{display:inline-flex;align-items:center}
 .wrap{display:flex;flex-direction:column}
 .wrap>header{order:1} .wrap>nav.tabs{order:2} .wrap>.view,#scroll>.view{order:3}
 @media (max-width:640px){
+  /* a card's own controls get their own row rather than crushing its title */
+  .acc-item>.card-h{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:10px 12px;padding:16px}
+  .acc-item>.card-h .acc-t{grid-column:1;grid-row:1;min-width:0}
+  .acc-item>.card-h>.chev{grid-column:2;grid-row:1;margin-top:3px}
+  .acc-item>.card-h .acc-act{grid-column:1/-1;grid-row:2;justify-content:flex-end;flex-wrap:wrap}
+  .acc-item>.card-h .acc-act:not(:has(*)){display:none}
+  .card-h>.act{flex-wrap:wrap}
+  /* the headline figures are Today's; other tabs start at their own content */
+  html:not([data-view="today"]) header.hero{display:none}
+  html:not([data-view="today"]) #scroll{padding-top:14px}
   /* phone: a real app shell — the page never scrolls, only the middle does */
   html,body{height:100%;overflow:hidden}
   body{padding:0;padding-top:env(safe-area-inset-top)}

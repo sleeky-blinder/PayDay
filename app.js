@@ -368,7 +368,7 @@ function openMore(){ openSheet('<div class="card-h"><h3 id="sheetTitle">Category
 var CHEV='<svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
 function accordion(root,defaultOpen){ root.querySelectorAll(':scope .card').forEach(function(card){ accCard(card,root.id,defaultOpen); }); }
 function accCard(card,rootId,defaultOpen){ (function(){ if(card.classList.contains('acc-item')||card.closest('.acc-b')||card.classList.contains('tiles')) return; var h=card.querySelector(':scope > .card-h'); if(!h) return; var h3=h.querySelector('h3'); if(!h3) return; card.classList.add('acc-item'); var key='acc-'+rootId+'-'+h3.textContent.trim().slice(0,40);
-  var src=h.querySelector(':scope > .src'); var t=document.createElement('div'); t.className='acc-t'; t.appendChild(h3); if(src) t.appendChild(src); var rest=Array.prototype.slice.call(h.childNodes); var act=document.createElement('div'); act.className='acc-act'; rest.forEach(function(n){ act.appendChild(n); }); act.insertAdjacentHTML('beforeend',CHEV); h.innerHTML=''; h.appendChild(t); h.appendChild(act);
+  var src=h.querySelector(':scope > .src'); var t=document.createElement('div'); t.className='acc-t'; t.appendChild(h3); if(src) t.appendChild(src); var rest=Array.prototype.slice.call(h.childNodes); var act=document.createElement('div'); act.className='acc-act'; rest.forEach(function(n){ act.appendChild(n); }); h.innerHTML=''; h.appendChild(t); h.appendChild(act); h.insertAdjacentHTML('beforeend',CHEV);
   var body=document.createElement('div'); body.className='acc-b'; while(h.nextSibling) body.appendChild(h.nextSibling); card.appendChild(body); card.dataset.acc=key;
   var saved=ls(key); var open= saved!=null ? saved==='1' : (!!defaultOpen||card.dataset.open==='1'); card.classList.toggle('open',open);
   h.addEventListener('click',function(ev){ if(ev.target.closest('button,input,select,a')) return; card.classList.toggle('open'); ls(key,card.classList.contains('open')?'1':'0'); }); })(); }
@@ -376,7 +376,7 @@ function accCard(card,rootId,defaultOpen){ (function(){ if(card.classList.contai
 /* ---------- events ---------- */
 var tabs=document.querySelectorAll('nav.tabs button'), views=document.querySelectorAll('.view');
 var YOU={settings:1,plan:1,goals:1};
-function show(v){ if(!el('v-'+v)) v='today'; views.forEach(function(s){ s.classList.toggle('on', s.id==='v-'+v); }); var tv=YOU[v]?'settings':v; tabs.forEach(function(t){ t.setAttribute('aria-selected', t.dataset.view===tv?'true':'false'); }); document.querySelectorAll('[data-sub-view]').forEach(function(sb){ sb.setAttribute('aria-selected', sb.dataset.subView===v?'true':'false'); }); ls('pm-tab',v); if(v==='today') el('bdg-today').hidden=true; }
+function show(v){ if(!el('v-'+v)) v='today'; document.documentElement.setAttribute('data-view',v); views.forEach(function(s){ s.classList.toggle('on', s.id==='v-'+v); }); var tv=YOU[v]?'settings':v; tabs.forEach(function(t){ t.setAttribute('aria-selected', t.dataset.view===tv?'true':'false'); }); document.querySelectorAll('[data-sub-view]').forEach(function(sb){ sb.setAttribute('aria-selected', sb.dataset.subView===v?'true':'false'); }); ls('pm-tab',v); if(v==='today') el('bdg-today').hidden=true; }
 tabs.forEach(function(t){ t.addEventListener('click',function(){ show(t.dataset.view); scrollTop0(); }); });
 el('sheetBg').addEventListener('click',closeSheet);
 document.addEventListener('keydown',function(ev){ if(ev.key==='Escape') closeSheet(); if((ev.key==='Enter'||ev.key===' ')&&ev.target.classList&&ev.target.classList.contains('grp')){ ev.preventDefault(); ev.target.click(); } });
@@ -457,7 +457,7 @@ function importText(txt){ try{ var j=JSON.parse(txt); if(!j.state) throw 0; if(!
 el('fileImport').addEventListener('change',function(){ var f=this.files&&this.files[0]; if(!f) return; var r=new FileReader(); r.onload=function(){ importText(r.result); }; r.readAsText(f); this.value=''; });
 window.addEventListener('online',function(){ flush(); });
 function scrollTop0(){ var s=document.getElementById('scroll'); if(s&&s.scrollHeight>s.clientHeight) s.scrollTop=0; window.scrollTo(0,0); }
-var APP_VERSION='v20260912-56109';
+var APP_VERSION='v20260912-57012';
 el('appVer').textContent='Build '+APP_VERSION;
 /* install: offer it where the browser allows, explain it where it does not */
 var deferredInstall=null;
