@@ -456,6 +456,8 @@ function saveFile(name,text){ var blob=new Blob([text],{type:'application/json'}
 function importText(txt){ try{ var j=JSON.parse(txt); if(!j.state) throw 0; if(!confirm('Replace everything in the app with this backup?')) return; adoptState(j.state); var entries=j.entries||[]; if(!entries.length&&j.ledger){ Object.keys(j.ledger).forEach(function(ym){ var m=j.ledger[ym]; (Array.isArray(m)?m:Object.keys(m).map(function(k){return m[k];})).forEach(function(t){ if(t&&!t.del) entries.push(t); }); }); } allTx().forEach(function(t){ tombstone(t.id); }); entries.forEach(function(t){ t.ts=Date.now(); putEntry(t); }); saveState(); render(); toast('Imported '+entries.length+' entries'); }catch(e){ toast('That is not a Payday backup'); } }
 el('fileImport').addEventListener('change',function(){ var f=this.files&&this.files[0]; if(!f) return; var r=new FileReader(); r.onload=function(){ importText(r.result); }; r.readAsText(f); this.value=''; });
 window.addEventListener('online',function(){ flush(); });
+var APP_VERSION='v20260912-54880';
+el('appVer').textContent='Build '+APP_VERSION;
 window.Payday={connectDb:connectDb,setSync:setSync,toast:toast,exportJSON:exportJSON,importText:importText};
 /* service worker: update notice */
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').then(function(reg){ reg.addEventListener('updatefound',function(){ var nw=reg.installing; nw&&nw.addEventListener('statechange',function(){ if(nw.state==='installed'&&navigator.serviceWorker.controller) toast('Payday updated','Reload',function(){ location.reload(); }); }); }); }).catch(function(){}); }

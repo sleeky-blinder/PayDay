@@ -8,6 +8,11 @@
   var App=window.Payday; if(!App) return;
   var cfg=window.PAYDAY_CONFIG||{};
   try{ var saved=JSON.parse(localStorage.getItem('pm-sync-cfg')||'null'); if(saved&&saved.url&&saved.key) cfg=saved; }catch(e){}
+  /* a setup link carries the project URL and anon key to a new device */
+  try{ var m=/[#?]setup=([A-Za-z0-9+/=_-]+)/.exec(location.href);
+    if(m){ var d=JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g,'+').replace(/_/g,'/')))));
+      if(d&&d.url&&d.key){ cfg={url:d.url,key:d.key}; localStorage.setItem('pm-sync-cfg',JSON.stringify(cfg)); localStorage.removeItem('pm-skip-signin'); }
+      history.replaceState(null,'',location.pathname); } }catch(e){}
   var hasCfg=!!(cfg.url&&cfg.key&&window.supabase);
   var client=null, uid=null, cache={}, docL={}, colL={}, channel=null;
 
@@ -73,6 +78,14 @@
   var cfgBox=q('#syncCfg'); if(cfgBox){ q('#syncUrl').value=cfg.url||''; q('#syncKey').value=cfg.key||'';
     q('#btnSyncSave').addEventListener('click',function(){ var u=q('#syncUrl').value.trim(), k=q('#syncKey').value.trim(); if(!u||!k) return App.toast('Both fields are needed'); localStorage.setItem('pm-sync-cfg',JSON.stringify({url:u,key:k})); localStorage.removeItem('pm-skip-signin'); location.reload(); });
     q('#btnSyncClear').addEventListener('click',function(){ localStorage.removeItem('pm-sync-cfg'); location.reload(); }); }
+  var lnkBtn=q('#btnSetupLink');
+  if(lnkBtn) lnkBtn.addEventListener('click',function(){
+    if(!cfg.url||!cfg.key) return App.toast('Nothing to share yet — set the project URL and key first');
+    var b=btoa(unescape(encodeURIComponent(JSON.stringify({url:cfg.url,key:cfg.key})))).replace(/\+/g,'-').replace(/\//g,'_');
+    var link=location.origin+location.pathname+'#setup='+b;
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(link).then(function(){ App.toast('Setup link copied — open it once on the other device'); },function(){ prompt('Copy this link and open it on the other device:',link); }); }
+    else prompt('Copy this link and open it on the other device:',link);
+  });
 
   if(!hasCfg){ var w=q('#storeWhere');
     if(cfg.url&&cfg.key&&!window.supabase){ /* configured, but the client library never loaded */
