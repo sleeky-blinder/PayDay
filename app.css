@@ -511,7 +511,6 @@ select{padding-right:34px}
 
 /* ---------- app shell: phone ---------- */
 html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
-:root{--sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px)}
 body{overscroll-behavior-y:contain}
 button,.btn,nav.tabs button,.seg button,.subnav button{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 html.installed .sync-cfg{opacity:.9}
@@ -572,9 +571,9 @@ label.btn{display:inline-flex;align-items:center}
   /* the shell owns the safe areas, and its height counts them — otherwise the
      status bar eats the top of whatever is scrolling */
   .wrap{box-sizing:border-box;height:100dvh;max-width:none;display:flex;flex-direction:column;min-height:0;
-        padding:var(--sat) 0 0;background:var(--bg)}
+        padding:0;padding-top:env(safe-area-inset-top,0px);background:var(--bg)}
   #scroll{display:block;order:1;flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:0 16px 14px}
-  nav.tabs.card{order:2;flex:0 0 auto;position:static;margin:0;border-radius:0;border:0;border-top:1px solid var(--line);box-shadow:0 -8px 24px rgba(0,0,0,.10);padding:6px 6px calc(6px + var(--sab));z-index:30;gap:0;overflow:visible}
+  nav.tabs.card{order:2;flex:0 0 auto;position:static;margin:0;border-radius:0;border:0;border-top:1px solid var(--line);box-shadow:0 -8px 24px rgba(0,0,0,.10);padding:6px 6px 6px;padding-bottom:calc(6px + env(safe-area-inset-bottom,0px));z-index:30;gap:0;overflow:visible}
   nav.tabs.card button{flex:1 1 0;min-width:0;padding:8px 2px 6px;gap:4px;font-size:10.5px;border-radius:10px}
   nav.tabs.card button svg{width:22px;height:22px}
   nav.tabs.card button::before{display:none}
