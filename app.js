@@ -188,9 +188,18 @@ var curMonth=ymOf(TODAY), curRun=currentRun(), planPhase=null, qCat='Food';
 priv=ls('pm-priv')==='1';
 function parkEye(v){ var e=el('btnPriv'), bar=document.querySelector('.topbar'), hero=document.querySelector('.hero-text'); if(!e||!bar||!hero) return; var wide=window.matchMedia('(min-width:641px)').matches; (wide||v==='today'?hero:bar).appendChild(e); }
 function applyPriv(){ document.documentElement.classList.toggle('priv',priv); var b=el('btnPriv'); if(b){ b.setAttribute('aria-pressed',priv?'true':'false'); b.title=priv?'Show the figures':'Hide the figures'; b.setAttribute('aria-label',b.title); } }
+var FIGRE=/₦\s?\d[\d,]*(?:\.\d+)?(?:\s?[–-]\s?\d[\d,]*(?:\.\d+)?)?\s?(?:k|m|bn)?/gi;
+function privStatic(){ [].forEach.call(document.querySelectorAll('.sfig'),function(root){
+  var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null,false), t;
+  while((t=w.nextNode())){ var p=t.parentNode; if(p&&p.hasAttribute&&p.hasAttribute('data-fig')) continue;
+    if(t.__o==null){ FIGRE.lastIndex=0; if(!FIGRE.test(t.nodeValue)) continue; t.__o=t.nodeValue; }
+    FIGRE.lastIndex=0; t.nodeValue = priv ? t.__o.replace(FIGRE,'₦*****') : t.__o; } }); }
+function renderFigs(){ var S=state.settings, m={allowance:S.allowance,ef:S.ef,rent:S.rentTarget};
+  [].forEach.call(document.querySelectorAll('[data-fig]'),function(sp){ var v=m[sp.getAttribute('data-fig')]; sp.textContent=(v==null?'—':naira(v,0)); }); }
 function render(){ try{ var b=balances(), e=expected(TODAY);
-  renderHero(b); renderQuick(b); renderPrompts(); renderRunCard(); renderPotGroups(b,e); renderRecent();
+  renderFigs(); renderHero(b); renderQuick(b); renderPrompts(); renderRunCard(); renderPotGroups(b,e); renderRecent();
   renderBills(); renderMove(b); renderLedger(); renderPotsRef(b); renderPlan(); renderGoals(b); renderSettings(); renderGaps();
+  privStatic();
   var due=dueItems().length, ps=prompts().length; var bd=el('bdg-move'); bd.textContent=due; bd.hidden=!due; var bt=el('bdg-today'); bt.textContent=ps; bt.hidden=!ps||document.querySelector('nav.tabs button[aria-selected="true"]')&&document.querySelector('nav.tabs button[aria-selected="true"]').dataset.view==='today';
   }catch(err){ console.error(err); toast('Display error: '+(err&&err.message||err)); } }
 function tile(l,big,sub,pct,cls,dim){ return '<div class="tile"><div class="hd"><span class="lbl">'+l+'</span>'+(cls?'<span class="pill '+cls+'">'+({fine:'Fine',need:'Needs you',over:'Over'}[cls]||'')+'</span>':'')+'</div><div class="big'+(dim?' dim':'')+'">'+big+'</div>'+(pct!=null?'<div class="bar '+(cls||'')+'"><i style="width:'+Math.min(100,pct).toFixed(1)+'%"></i></div>':'')+'<div class="sub">'+sub+'</div></div>'; }
@@ -479,7 +488,7 @@ function importText(txt){ try{ var j=JSON.parse(txt); if(!j.state) throw 0; if(!
 el('fileImport').addEventListener('change',function(){ var f=this.files&&this.files[0]; if(!f) return; var r=new FileReader(); r.onload=function(){ importText(r.result); }; r.readAsText(f); this.value=''; });
 window.addEventListener('online',function(){ flush(); });
 function scrollTop0(){ var s=document.getElementById('scroll'); if(s&&s.scrollHeight>s.clientHeight) s.scrollTop=0; window.scrollTo(0,0); }
-var APP_VERSION='v20260913-32883';
+var APP_VERSION='v20260913-33726';
 el('appVer').textContent='Build '+APP_VERSION;
 /* install: offer it where the browser allows, explain it where it does not */
 var deferredInstall=null;
