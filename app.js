@@ -69,7 +69,10 @@ function addMonths(ym,n){ return ymFromIdx(idx(ym)+n); }
 function daysIn(ym){ var a=ym.split('-'); return new Date(+a[0],+a[1],0).getDate(); }
 function lastDayOf(ym){ return ym+'-'+p2(daysIn(ym)); }
 function addDays(s,n){ var a=s.split('-'); var d=new Date(+a[0],+a[1]-1,+a[2]+n); return iso(d); }
-function fmt(n,dec){ if(n==null||isNaN(n)) return '—'; var d = dec!=null?dec:(Math.abs(n-Math.round(n))>0.004?2:0); return n.toLocaleString('en-NG',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+var priv=false;  /* set from the privacy toggle */
+function maskNum(){ return '*****'; }
+function hideDigits(s){ return priv?String(s==null?'':s).replace(/\d[\d,.]*/g,'*****'):s; }
+function fmt(n,dec){ if(n==null||isNaN(n)) return '—'; if(priv) return maskNum(); var d = dec!=null?dec:(Math.abs(n-Math.round(n))>0.004?2:0); return n.toLocaleString('en-NG',{minimumFractionDigits:d,maximumFractionDigits:d}); }
 function naira(n,dec){ return (n<0?'−':'')+'₦'+fmt(Math.abs(n),dec); }
 function usdFmt(n){ return (n<0?'−':'')+'$'+fmt(Math.abs(n),0); }
 function monthName(ym){ var a=ym.split('-'); return new Date(+a[0],+a[1]-1,1).toLocaleDateString('en-GB',{month:'long',year:'numeric'}); }
@@ -182,7 +185,8 @@ function pillFor(st,txt){ var words={fine:'Fine',need:'Needs you',over:'Over',ne
 
 /* ---------- render ---------- */
 var curMonth=ymOf(TODAY), curRun=currentRun(), planPhase=null, qCat='Food';
-var priv=ls('pm-priv')==='1';
+priv=ls('pm-priv')==='1';
+function parkEye(v){ var e=el('btnPriv'), bar=document.querySelector('.topbar'), hero=document.querySelector('.hero-text'); if(!e||!bar||!hero) return; var wide=window.matchMedia('(min-width:641px)').matches; (wide||v==='today'?hero:bar).appendChild(e); }
 function applyPriv(){ document.documentElement.classList.toggle('priv',priv); var b=el('btnPriv'); if(b){ b.setAttribute('aria-pressed',priv?'true':'false'); b.title=priv?'Show the figures':'Hide the figures'; b.setAttribute('aria-label',b.title); } }
 function render(){ try{ var b=balances(), e=expected(TODAY);
   renderHero(b); renderQuick(b); renderPrompts(); renderRunCard(); renderPotGroups(b,e); renderRecent();
@@ -290,7 +294,7 @@ function renderLedger(){ var tx=allTx().slice().reverse(), acct=el('lgAcct').val
   if(el('lgAcct').options.length<2){ el('lgAcct').innerHTML='<option value="">All accounts</option>'+ACC.concat(EXT).map(function(a){return '<option value="'+a.id+'">'+a.name+'</option>';}).join(''); el('lgAcct').value=acct; }
   var typ=el('lgType').value; var typeOf=function(t){ if(t.to==='fees') return 'fees'; if(t.to==='spend') return 'spend'; if(t.from==='income'||t.from==='interest'||t.to==='interest'||t.recon) return 'income'; return 'move'; };
   var f=tx.filter(function(t){ return (!typ||typeOf(t)===typ)&&(!acct||t.from===acct||t.to===acct)&&(!mon||ymOf(t.d)===mon)&&(!q||((t.note||'')+' '+(t.cat||'')+' '+name(t.from)+' '+name(t.to)).toLowerCase().indexOf(q)>=0); }); var inn=0,out=0;
-  el('lgBody').innerHTML=f.length?f.map(function(t){ if(acct){ if(t.to===acct) inn+=t.amt; if(t.from===acct) out+=t.amt; } return '<tr class="rowbtn" data-edit="'+t.id+'"><td class="num small">'+dLabelY(t.d)+'</td><td>'+name(t.from)+'</td><td>'+name(t.to)+'</td><td class="small hide-m">'+esc([t.cat&&t.to!=='fees'?t.cat:'',t.note||''].filter(Boolean).join(' · '))+(t.key?'<span class="why">planned</span>':'')+'</td><td class="r num">'+amtCell(t,acct)+'</td></tr>'; }).join(''):'<tr><td colspan="5" class="empty">No entries match.</td></tr>';
+  el('lgBody').innerHTML=f.length?f.map(function(t){ if(acct){ if(t.to===acct) inn+=t.amt; if(t.from===acct) out+=t.amt; } return '<tr class="rowbtn" data-edit="'+t.id+'"><td class="num small">'+dLabelY(t.d)+'</td><td>'+name(t.from)+'</td><td>'+name(t.to)+'</td><td class="small hide-m">'+esc(hideDigits([t.cat&&t.to!=='fees'?t.cat:'',t.note||''].filter(Boolean).join(' · ')))+(t.key?'<span class="why">planned</span>':'')+'</td><td class="r num">'+amtCell(t,acct)+'</td></tr>'; }).join(''):'<tr><td colspan="5" class="empty">No entries match.</td></tr>';
   el('lgFoot').innerHTML='<span>'+f.length+' entr'+(f.length===1?'y':'ies')+' · tap a line to edit</span>'+(acct?'<span>In <b class="num">'+naira(inn,0)+'</b> · Out <b class="num">'+naira(out,0)+'</b></span>':''); }
 
 /* balances on a date */
@@ -372,7 +376,7 @@ function openEdit(id){ var t=getTx(id); if(!t) return; var isExp=t.to==='spend';
    '<div class="f"><label class="lbl" for="edHow">How</label>'+sel(METH,t.method||'').replace('<select','<select id="edHow"')+'</div>'+
    (isExp?'<div class="f"><label class="lbl" for="edCat">Category</label>'+sel(CATS.map(function(c){return [c,c];}),t.cat||'Other').replace('<select','<select id="edCat"')+'</div>':'')+
    (isUsd(t.to)||isUsd(t.from)?'<div class="f"><label class="lbl" for="edUsd">Dollars ($)</label><input class="num" id="edUsd" type="number" step="0.01" value="'+(t.usd!=null?t.usd:'')+'"></div>':'')+
-   '<div class="f wide"><label class="lbl" for="edNote">Note</label><input id="edNote" value="'+esc(t.note||'')+'"></div>')+
+   '<div class="f wide"><label class="lbl" for="edNote">Note</label><input id="edNote" value="'+esc(hideDigits(t.note||''))+'"></div>')+
    (t.key?'<div class="f wide small muted">Planned line · '+esc(t.key)+'</div>':'')+
    '<div class="actions"><button class="btn danger" type="button" data-delentry="'+id+'">Delete</button><span style="flex:1"></span><button class="btn pri" type="submit">Save</button></div></form>'); }
 function openRecon(acct){ var b=balances(); var c=state.confirmed[acct]; openSheet('<div class="card-h"><h3 id="sheetTitle">Reconcile '+name(acct)+'</h3><button class="btn ghost sm" type="button" data-close="1">Close</button></div><form class="form" id="reconForm" data-acct="'+acct+'"><div class="f wide small muted">Sheet says <b class="num">'+naira(b[acct])+'</b>'+(c?' · last confirmed '+dLabelY(c.d)+' at '+naira(c.bal):'')+'. '+(ACCMAP[acct].physical?'Count the notes in your wallet and type the total; anything missing is recorded as <i>cash spent, not itemised</i>.':'Type what the app shows now; the difference is recorded as a dated <i>Interest / returns</i> line so history stays intact.')+'</div><div class="f"><label class="lbl" for="rcBal">'+(ACCMAP[acct].physical?'Cash counted ₦':'Balance in the app ₦')+'</label><input class="num" id="rcBal" type="number" step="0.01" min="0" value="'+b[acct]+'" required></div><div class="actions"><button class="btn pri" type="submit">Confirm</button></div></form>'); }
@@ -391,7 +395,7 @@ function accCard(card,rootId,defaultOpen){ (function(){ if(card.classList.contai
 /* ---------- events ---------- */
 var tabs=document.querySelectorAll('nav.tabs button'), views=document.querySelectorAll('.view');
 var YOU={settings:1,plan:1,goals:1};
-function show(v){ if(!el('v-'+v)) v='today'; document.documentElement.setAttribute('data-view',v); views.forEach(function(s){ s.classList.toggle('on', s.id==='v-'+v); }); var tv=YOU[v]?'settings':v; tabs.forEach(function(t){ t.setAttribute('aria-selected', t.dataset.view===tv?'true':'false'); }); document.querySelectorAll('[data-sub-view]').forEach(function(sb){ sb.setAttribute('aria-selected', sb.dataset.subView===v?'true':'false'); }); ls('pm-tab',v); if(v==='today') el('bdg-today').hidden=true; }
+function show(v){ if(!el('v-'+v)) v='today'; document.documentElement.setAttribute('data-view',v); parkEye(v); views.forEach(function(s){ s.classList.toggle('on', s.id==='v-'+v); }); var tv=YOU[v]?'settings':v; tabs.forEach(function(t){ t.setAttribute('aria-selected', t.dataset.view===tv?'true':'false'); }); document.querySelectorAll('[data-sub-view]').forEach(function(sb){ sb.setAttribute('aria-selected', sb.dataset.subView===v?'true':'false'); }); ls('pm-tab',v); if(v==='today') el('bdg-today').hidden=true; }
 tabs.forEach(function(t){ t.addEventListener('click',function(){ show(t.dataset.view); scrollTop0(); }); });
 el('sheetBg').addEventListener('click',closeSheet);
 document.addEventListener('keydown',function(ev){ if(ev.key==='Escape') closeSheet(); if((ev.key==='Enter'||ev.key===' ')&&ev.target.classList&&ev.target.classList.contains('grp')){ ev.preventDefault(); ev.target.click(); } });
@@ -459,7 +463,7 @@ el('today').textContent=now.toLocaleDateString('en-GB',{weekday:'short',day:'num
 function onNewDay(was,t){ curRun=currentRun(); ['qDate','mvDate'].forEach(function(id){ var e=el(id); if(e&&e.value===was) e.value=t; }); render(); }
 document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') refreshDay(); }); window.addEventListener('focus',refreshDay); setInterval(refreshDay,60000);
 applyPriv();
-el('btnPriv').addEventListener('click',function(){ priv=!priv; ls('pm-priv',priv?'1':'0'); applyPriv(); });
+el('btnPriv').addEventListener('click',function(){ priv=!priv; ls('pm-priv',priv?'1':'0'); applyPriv(); render(); });
 loadLocal(); fillSelects(); render(); accordion(el('v-pots'),false); accCard(el('recentCard'),'v-today',true); accCard(el('needsCard'),'v-today',true); accCard(el('billsCard'),'v-today',false); accCard(el('monthEnd'),'v-ledger',false); accordion(el('v-settings'),false); accordion(el('v-plan'),false); show((location.hash||'').replace('#','')||ls('pm-tab')||'today');
 
 /* app hooks: sync layer (sync.js) calls connectDb; downloads are plain file saves */
@@ -475,7 +479,7 @@ function importText(txt){ try{ var j=JSON.parse(txt); if(!j.state) throw 0; if(!
 el('fileImport').addEventListener('change',function(){ var f=this.files&&this.files[0]; if(!f) return; var r=new FileReader(); r.onload=function(){ importText(r.result); }; r.readAsText(f); this.value=''; });
 window.addEventListener('online',function(){ flush(); });
 function scrollTop0(){ var s=document.getElementById('scroll'); if(s&&s.scrollHeight>s.clientHeight) s.scrollTop=0; window.scrollTo(0,0); }
-var APP_VERSION='v20260913-32708';
+var APP_VERSION='v20260913-32883';
 el('appVer').textContent='Build '+APP_VERSION;
 /* install: offer it where the browser allows, explain it where it does not */
 var deferredInstall=null;
