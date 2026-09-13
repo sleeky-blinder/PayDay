@@ -184,7 +184,7 @@ function pillFor(st,txt){ var words={fine:'Fine',need:'Needs you',over:'Over',ne
 var curMonth=ymOf(TODAY), curRun=currentRun(), planPhase=null, qCat='Food';
 function render(){ try{ var b=balances(), e=expected(TODAY);
   renderHero(b); renderQuick(b); renderPrompts(); renderRunCard(); renderPotGroups(b,e); renderRecent();
-  renderBills(); renderMove(b); renderLedger(); renderPotsRef(b); renderAsOf(); renderPlan(); renderGoals(b); renderSettings(); renderGaps();
+  renderBills(); renderMove(b); renderLedger(); renderPotsRef(b); renderPlan(); renderGoals(b); renderSettings(); renderGaps();
   var due=dueItems().length, ps=prompts().length; var bd=el('bdg-move'); bd.textContent=due; bd.hidden=!due; var bt=el('bdg-today'); bt.textContent=ps; bt.hidden=!ps||document.querySelector('nav.tabs button[aria-selected="true"]')&&document.querySelector('nav.tabs button[aria-selected="true"]').dataset.view==='today';
   }catch(err){ console.error(err); toast('Display error: '+(err&&err.message||err)); } }
 function tile(l,big,sub,pct,cls,dim){ return '<div class="tile"><div class="hd"><span class="lbl">'+l+'</span>'+(cls?'<span class="pill '+cls+'">'+({fine:'Fine',need:'Needs you',over:'Over'}[cls]||'')+'</span>':'')+'</div><div class="big'+(dim?' dim':'')+'">'+big+'</div>'+(pct!=null?'<div class="bar '+(cls||'')+'"><i style="width:'+Math.min(100,pct).toFixed(1)+'%"></i></div>':'')+'<div class="sub">'+sub+'</div></div>'; }
@@ -214,6 +214,23 @@ function renderRunCard(){ var run=curRun, items=runItems(run), byKey=txByKey(), 
 function potStatus(a,v,x,gap){ var s=state.settings; if(a.cash){ if(a.id==='pocket'&&v<0) return ['over','Overdrawn']; if(a.id==='flex'&&v>1000&&now.getDate()>=2&&TODAY>='2026-10-01') return ['need','Holding money overnight']; if(a.id==='zenith'&&v>s.zfloat+1000&&now.getDate()>=3) return ['need','Above the float']; return [null,'']; }
   if(Math.abs(gap)<1000) return [null,'']; if(gap>0) return [null,'Ahead of plan by '+naira(gap,0)]; return [gap<-200000?'over':'need','Behind plan by '+naira(-gap,0)]; }
 function renderPotGroups(b,e){ var u=usdBalances(), s=state.settings, html='', trAll=tracked(b);
+  var pd=el('potDate'); if(pd&&!pd.max) pd.max=TODAY;
+  var asOf=pd&&pd.value&&pd.value<TODAY?pd.value:'';
+  el('potToday').hidden=!asOf;
+  el('potSrc').textContent=asOf?'What every pot held at the end of that day':'Sheet balance · plan expects · reconcile when the app differs';
+  if(asOf){ /* a past date: balances only — nothing here is actionable backwards */
+    var hb=balances(asOf), trh=0;
+    GROUPS.forEach(function(g){ var list=ACC.filter(function(a){return a.grp===g[0];}); if(!list.length) return;
+      var sum=list.reduce(function(t,a){return t+hb[a.id];},0);
+      html+='<div class="gset"><div class="grp g-'+g[0]+'"><span class="lbl">'+g[1]+'</span><span class="n">'+list.length+'</span><span class="v">'+naira(sum,0)+'</span></div>';
+      list.forEach(function(a){ var open=+state.opening[a.id]||0, ch=hb[a.id]-open; if(!a.cash) trh+=hb[a.id];
+        html+='<div class="arow"><span>'+a.name+'</span><span class="small muted hide-m">'+a.app+'</span><span class="r num small '+(Math.abs(ch)<0.005?'muted':(ch>=0?'pos':'neg'))+'">'+(Math.abs(ch)<0.005?'—':(ch>=0?'+':'−')+fmt(Math.abs(ch)))+'</span><span class="r num">'+fmt(hb[a.id])+'</span></div>'; });
+      html+='</div>'; });
+    el('potGroups').innerHTML=html;
+    var pf=el('potFoot'); pf.hidden=false;
+    pf.innerHTML='<span>Tracked on '+dLabelY(asOf)+': <b class="num">'+naira(trh,0)+'</b> · change is since the '+anchorLbl()+' anchor</span><span class="small muted">Looking back — tap Today to reconcile</span>';
+    return; }
+  el('potFoot').hidden=true;
   GROUPS.forEach(function(g){ var list=ACC.filter(function(a){return a.grp===g[0];}); if(!list.length) return; var sum=list.reduce(function(t,a){return t+b[a.id];},0); if(sum===0&&list.every(function(a){return (e[a.id]||0)===0;})&&g[0]!=='Spending') return;
     var open=ls('grp-'+g[0])!=='0'; var needs=list.some(function(a){ var st=potStatus(a,b[a.id],e[a.id],b[a.id]-(a.cash?0:returnsFor(a.id))-e[a.id]); return !!st[0]; });
     html+='<div class="gset"><div class="grp g-'+g[0]+(open?' open':'')+'" data-grp="'+g[0]+'" role="button" tabindex="0" aria-expanded="'+open+'"><span class="lbl">'+g[1]+'</span><span class="n">'+list.length+'</span>'+(needs&&!open?'<span class="pill need">Needs you</span>':'')+'<span class="v">'+naira(sum,0)+(g[0]==='Dollars'?' · ≈ '+usdFmt(u.fxd+u.dollar):'')+((g[0]==='Dollars'||g[0]==='Growth')&&trAll>0?' · '+(sum/trAll*100).toFixed(0)+'% of tracked':'')+'</span><svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div><div class="grp-b"'+(open?'':' hidden')+'>';
@@ -275,10 +292,6 @@ function renderLedger(){ var tx=allTx().slice().reverse(), acct=el('lgAcct').val
   el('lgFoot').innerHTML='<span>'+f.length+' entr'+(f.length===1?'y':'ies')+' · tap a line to edit</span>'+(acct?'<span>In <b class="num">'+naira(inn,0)+'</b> · Out <b class="num">'+naira(out,0)+'</b></span>':''); }
 
 /* balances on a date */
-function renderAsOf(){ if(!el('asOfDate').value) el('asOfDate').value=TODAY; var d=el('asOfDate').value||TODAY; if(d>TODAY){ d=TODAY; el('asOfDate').value=TODAY; } var b=balances(d); var rows=''; var tr=0;
-  rows+='<div class="ahead"><span>Pot</span><span class="hide-m">App</span><span class="r">Change since anchor</span><span class="r">Balance</span></div>';
-  GROUPS.forEach(function(g){ var list=ACC.filter(function(a){return a.grp===g[0];}); if(!list.length) return; var sum=list.reduce(function(s,a){return s+b[a.id];},0); rows+='<div class="gset"><div class="grp g-'+g[0]+'"><span class="lbl">'+g[1]+'</span><span class="n">'+list.length+'</span><span class="v">'+naira(sum,0)+'</span></div>'; list.forEach(function(a){ var open=+state.opening[a.id]||0, ch=b[a.id]-open; if(!a.cash) tr+=b[a.id]; rows+='<div class="arow"><span>'+a.name+'</span><span class="small muted hide-m">'+a.app+'</span><span class="r num small '+(Math.abs(ch)<0.005?'muted':(ch>=0?'pos':'neg'))+'">'+(Math.abs(ch)<0.005?'—':(ch>=0?'+':'−')+fmt(Math.abs(ch)))+'</span><span class="r num">'+fmt(b[a.id])+'</span></div>'; }); rows+='</div>'; });
-  el('asOfBody').innerHTML=rows; el('asOfFoot').innerHTML='<span>Tracked on '+dLabelY(d)+': <b class="num">'+naira(tr,0)+'</b> · cash <b class="num">'+naira(b.pocket+b.zenith+b.flex,0)+'</b></span><span class="small muted">Change is since the '+anchorLbl()+' anchor</span>'; }
 /* pots ref */
 function renderPotsRef(b){ el('potsRef').innerHTML=ACC.filter(function(a){return !a.cash;}).concat(ACC.filter(function(a){return a.cash;})).map(function(a){ return '<tr><td><b>'+a.name+'</b>'+(a.rate?'<span class="why">quoted '+a.rate+'</span>':'')+'</td><td class="small num hide-m">'+esc(a.path)+'</td><td class="small">'+esc(a.job)+'</td></tr>'; }).join('')+
   '<tr><td><b>Not held</b></td><td class="small num hide-m">Global equities · US Treasuries · gold</td><td class="small">Needs a SEC-licensed broker (Trove, Bamboo, Chaka). Deferred to March 2027 by choice.</td></tr>'; }
@@ -429,7 +442,8 @@ el('btnExport').addEventListener('click',function(){ saveFile('payday-'+TODAY+'.
 el('btnShowJson').addEventListener('click',function(){ el('jsonBox').value=exportJSON(); el('jsonBox').hidden=false; });
 el('btnImport').addEventListener('click',function(){ var box=el('jsonBox'); if(box.hidden){ box.hidden=false; box.value=''; box.focus(); return toast('Paste the backup, then Import again'); } importText(box.value); });
 el('rPrev').addEventListener('click',function(){ if(idx(curRun)>idx(FIRST_RUN)){ curRun=addMonths(curRun,-1); renderMove(balances()); renderRunCard(); } }); el('rNext').addEventListener('click',function(){ curRun=addMonths(curRun,1); renderMove(balances()); renderRunCard(); });
-el('asOfDate').addEventListener('change',renderAsOf); el('asOfToday').addEventListener('click',function(){ el('asOfDate').value=TODAY; renderAsOf(); });
+el('potDate').addEventListener('change',function(){ render(); });
+el('potToday').addEventListener('click',function(){ el('potDate').value=''; render(); });
 el('lgAcct').addEventListener('change',renderLedger); el('lgType').addEventListener('change',renderLedger); el('lgMonth').addEventListener('change',renderLedger); el('lgSearch').addEventListener('input',renderLedger);
 el('feesBody').addEventListener('change',function(ev){ var k=ev.target.dataset.fee; if(!k) return; var p=k.split('.'); var f=Object.assign({},state.settings.fees||{}); f[p[0]]=Object.assign({},DEFAULT_FEES[p[0]],f[p[0]]||{}); f[p[0]][p[1]]=ev.target.checked; state.settings.fees=f; saveState(); toast('Charges updated'); });
 el('gaps').addEventListener('change',function(ev){ var tr=ev.target.closest('tr'); if(!tr) return; state.done['gap-'+tr.dataset.k]=ev.target.checked; saveState(); renderGaps(); });
@@ -440,7 +454,7 @@ function fillSelects(){ var opts=function(list){ return list.map(function(a){ret
 
 /* ---------- boot ---------- */
 el('today').textContent=now.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'long',year:'numeric'});
-function onNewDay(was,t){ curRun=currentRun(); ['qDate','mvDate','asOfDate'].forEach(function(id){ var e=el(id); if(e&&e.value===was) e.value=t; }); render(); }
+function onNewDay(was,t){ curRun=currentRun(); ['qDate','mvDate'].forEach(function(id){ var e=el(id); if(e&&e.value===was) e.value=t; }); render(); }
 document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') refreshDay(); }); window.addEventListener('focus',refreshDay); setInterval(refreshDay,60000);
 loadLocal(); fillSelects(); render(); accordion(el('v-pots'),false); accCard(el('recentCard'),'v-today',true); accCard(el('needsCard'),'v-today',true); accCard(el('billsCard'),'v-today',false); accCard(el('monthEnd'),'v-ledger',false); accordion(el('v-settings'),false); accordion(el('v-plan'),false); show((location.hash||'').replace('#','')||ls('pm-tab')||'today');
 
@@ -457,7 +471,7 @@ function importText(txt){ try{ var j=JSON.parse(txt); if(!j.state) throw 0; if(!
 el('fileImport').addEventListener('change',function(){ var f=this.files&&this.files[0]; if(!f) return; var r=new FileReader(); r.onload=function(){ importText(r.result); }; r.readAsText(f); this.value=''; });
 window.addEventListener('online',function(){ flush(); });
 function scrollTop0(){ var s=document.getElementById('scroll'); if(s&&s.scrollHeight>s.clientHeight) s.scrollTop=0; window.scrollTo(0,0); }
-var APP_VERSION='v20260913-22944';
+var APP_VERSION='v20260913-24156';
 el('appVer').textContent='Build '+APP_VERSION;
 /* install: offer it where the browser allows, explain it where it does not */
 var deferredInstall=null;

@@ -509,6 +509,10 @@ select{padding-right:34px}
 .subnav+.view-head{margin-top:14px;justify-content:flex-start;gap:16px}
 .subnav+.view-head .act{margin-left:auto}
 
+/* v76 — one home for pot balances: live by default, a date winds it back */
+#potDate{max-width:160px}
+#potFoot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
 /* ---------- app shell: phone ---------- */
 html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
 body{overscroll-behavior-y:contain}
