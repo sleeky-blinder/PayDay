@@ -182,6 +182,8 @@ function pillFor(st,txt){ var words={fine:'Fine',need:'Needs you',over:'Over',ne
 
 /* ---------- render ---------- */
 var curMonth=ymOf(TODAY), curRun=currentRun(), planPhase=null, qCat='Food';
+var priv=ls('pm-priv')==='1';
+function applyPriv(){ document.documentElement.classList.toggle('priv',priv); var b=el('btnPriv'); if(b){ b.setAttribute('aria-pressed',priv?'true':'false'); b.title=priv?'Show the figures':'Hide the figures'; b.setAttribute('aria-label',b.title); } }
 function render(){ try{ var b=balances(), e=expected(TODAY);
   renderHero(b); renderQuick(b); renderPrompts(); renderRunCard(); renderPotGroups(b,e); renderRecent();
   renderBills(); renderMove(b); renderLedger(); renderPotsRef(b); renderPlan(); renderGoals(b); renderSettings(); renderGaps();
@@ -456,6 +458,8 @@ function fillSelects(){ var opts=function(list){ return list.map(function(a){ret
 el('today').textContent=now.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'long',year:'numeric'});
 function onNewDay(was,t){ curRun=currentRun(); ['qDate','mvDate'].forEach(function(id){ var e=el(id); if(e&&e.value===was) e.value=t; }); render(); }
 document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') refreshDay(); }); window.addEventListener('focus',refreshDay); setInterval(refreshDay,60000);
+applyPriv();
+el('btnPriv').addEventListener('click',function(){ priv=!priv; ls('pm-priv',priv?'1':'0'); applyPriv(); });
 loadLocal(); fillSelects(); render(); accordion(el('v-pots'),false); accCard(el('recentCard'),'v-today',true); accCard(el('needsCard'),'v-today',true); accCard(el('billsCard'),'v-today',false); accCard(el('monthEnd'),'v-ledger',false); accordion(el('v-settings'),false); accordion(el('v-plan'),false); show((location.hash||'').replace('#','')||ls('pm-tab')||'today');
 
 /* app hooks: sync layer (sync.js) calls connectDb; downloads are plain file saves */
@@ -471,7 +475,7 @@ function importText(txt){ try{ var j=JSON.parse(txt); if(!j.state) throw 0; if(!
 el('fileImport').addEventListener('change',function(){ var f=this.files&&this.files[0]; if(!f) return; var r=new FileReader(); r.onload=function(){ importText(r.result); }; r.readAsText(f); this.value=''; });
 window.addEventListener('online',function(){ flush(); });
 function scrollTop0(){ var s=document.getElementById('scroll'); if(s&&s.scrollHeight>s.clientHeight) s.scrollTop=0; window.scrollTo(0,0); }
-var APP_VERSION='v20260913-24506';
+var APP_VERSION='v20260913-32708';
 el('appVer').textContent='Build '+APP_VERSION;
 /* install: offer it where the browser allows, explain it where it does not */
 var deferredInstall=null;

@@ -513,6 +513,32 @@ select{padding-right:34px}
 #potDate{max-width:160px}
 #potFoot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 
+/* v78 — privacy toggle: one tap blurs every figure, per device */
+.eye{border:0;background:none;padding:4px;margin-left:2px;cursor:pointer;color:var(--ink-3);display:inline-flex;align-items:center;border-radius:8px;line-height:0}
+.eye:hover{color:var(--ink);background:var(--panel-2)}
+.eye svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.eye .e-hide{display:none}
+html.priv .eye{color:var(--ink-2)}
+html.priv .eye .e-show{display:none}
+html.priv .eye .e-hide{display:inline}
+/* the figures themselves — blurred, never removed, so layout never shifts */
+html.priv .meta .b, html.priv .meta .s,
+html.priv .pot .bal, html.priv .grp .v, html.priv .arow .r,
+html.priv .amt, html.priv .due .v, html.priv .row .v, html.priv .kv .v,
+html.priv #potFoot, html.priv #lgFoot, html.priv #subsFoot, html.priv #subsFoot .num, html.priv .foot .num,
+html.priv #meBody .num, html.priv #projBody .num, html.priv #msBody .num,
+html.priv #prompts b, html.priv #prompts .why, html.priv #prompts .act .btn,
+html.priv .why, html.priv .due .how, html.priv #recent .v, html.priv #recent b,
+html.priv input.amt, html.priv #runCard .v,
+html.priv #runList .grp .lbl, html.priv #lgBody td:nth-child(4),
+html.priv #v-settings input, html.priv #v-settings textarea, html.priv #jsonBox
+  {filter:blur(7px);transition:filter .12s}
+html.priv .meta .b{filter:blur(10px)}
+@media (hover:hover){ html.priv .eye:hover ~ * {} }
+
+/* the privacy toggle lives above everything, so every tab can reach it */
+.topbar{display:flex;justify-content:flex-end;align-items:center;padding:8px 2px 0}
+
 /* ---------- app shell: phone ---------- */
 html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
 body{overscroll-behavior-y:contain}
