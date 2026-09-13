@@ -529,6 +529,32 @@ label.btn{display:inline-flex;align-items:center}
 .wrap{display:flex;flex-direction:column}
 .wrap>header{order:1} .wrap>nav.tabs{order:2} .wrap>.view,#scroll>.view{order:3}
 @media (max-width:640px){
+  /* Ledger: entries become rows, not a five-column table squeezed to 393px */
+  #v-ledger .view-head{display:block}
+  #v-ledger .view-head .act{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+  #v-ledger .view-head .act #lgSearch{grid-column:1/-1}
+  table:has(#lgBody) thead{display:none}
+  table:has(#lgBody),table:has(#lgBody) tbody{display:block}
+  #lgBody tr{display:grid;grid-template-columns:auto minmax(0,1fr) auto;
+    grid-template-areas:"d d a" "f t a" "n n n";gap:3px 10px;padding:13px 16px;border-bottom:1px solid var(--line)}
+  #lgBody tr:last-child{border-bottom:0}
+  #lgBody td{border:0;padding:0;font-size:14px}
+  #lgBody td:nth-child(1){grid-area:d;font-size:11.5px;color:var(--ink-3)}
+  #lgBody td:nth-child(2){grid-area:f}
+  #lgBody td:nth-child(3){grid-area:t;color:var(--ink-2)}
+  #lgBody td:nth-child(3)::before{content:"→ ";color:var(--ink-3)}
+  #lgBody td:nth-child(4){grid-area:n;display:block!important;font-size:12.5px;color:var(--ink-3)}
+  #lgBody td:nth-child(4):empty{display:none!important}
+  #lgBody td:nth-child(5){grid-area:a;align-self:center;text-align:right;white-space:nowrap;font-size:15px}
+  #lgBody td.empty{grid-area:auto;grid-column:1/-1;text-align:center}
+  /* Move: date, line, amount and action stop fighting for one row */
+  .due{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"s s" "w w" "i a";gap:4px 18px;padding:14px 16px}
+  .due .step{grid-area:s;width:auto;white-space:nowrap;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase}
+  .due .what{grid-area:w}
+  .due .what b{font-size:15px}
+  .due input.amt,.due .v{grid-area:i;width:126px;justify-self:start;margin-top:6px}
+  .due .act{grid-area:a;justify-content:flex-end;margin-top:6px;gap:10px;padding-left:16px}
+  .due .st{font-size:11px}
   /* a card's own controls get their own row rather than crushing its title */
   .acc-item>.card-h{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:10px 12px;padding:16px}
   .acc-item>.card-h .acc-t{grid-column:1;grid-row:1;min-width:0}
