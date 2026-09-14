@@ -15,7 +15,7 @@ var ACC=[
  {id:'nest',name:"Light's Nest",app:'Cowrywise',grp:'Family',rate:'12.57% p.a.',path:'Cowrywise → Nest',job:'Funded every payday, with a catch-up on 8 Dec. Hers, for 17 years.'},
  {id:'equity',name:'Equity Portfolio',app:'Cowrywise',grp:'Growth',rate:'41.13% YTD',path:'Cowrywise → Naira Mutual Funds → My investments',job:'Four active equity funds. Hold. No new money until under 25% of the whole.'},
  {id:'stocks',name:'Stocks · MTN',app:'Cowrywise',grp:'Speculative',path:'Cowrywise → Stocks',job:'Speculative sleeve, funded monthly from May 2027. Never topped up after a loss.'},
- {id:'dangote',name:'Dangote Refinery',app:'PiggyVest',grp:'Speculative',path:'PiggyVest → IPO',job:'Bought in the 1 Oct IPO. Then leave it alone for a year.'},
+ {id:'dangote',name:'Dangote Refinery',app:'PiggyVest',grp:'Speculative',path:'PiggyVest → IPO',job:'The IPO subscription. Then leave it alone for a year.'},
  {id:'piggy',name:'PiggyBank',app:'PiggyVest',grp:'Locked',rate:'16% p.a.',path:'PiggyVest → Savings → PiggyBank',job:'Locked savings. Interest to Flex on the 1st. Free window ~8 Dec, then it never re-locks.'}
 ];
 var GROUPS=[['Spending','Spending accounts'],['Reserve','Reserve'],['Rent','Rent'],['Dollars','Dollar sleeve'],['Wants','Wants'],['Family','Family'],['Growth','Growth'],['Speculative','Speculative'],['Locked','Locked']];
@@ -126,7 +126,7 @@ function lineAmt(L,ym){ if(L.months) return L.months[ym]!=null?+L.months[ym]:nul
 function grpLabel(g){ var P=plan(); var s=P.salaries.filter(function(x){return (g==='Flex'&&x.acct==='flex')||(g==='Zenith'&&x.acct==='zenith')||(g==='Pocket'&&x.acct==='pocket');})[0]; return g==='Salaries'?'Salaries':(s?g+' '+naira(s.amt,0):g); }
 function runItems(ym){ var P=plan(), prev=addMonths(ym,-1), land=lastDayOf(prev), out=[];
   P.salaries.forEach(function(s){ out.push({key:'r'+ym+'-sal-'+s.acct,d:land,from:'income',to:s.acct,amt:+s.amt,label:name(s.acct)+' salary lands',how:s.note||'',grp:'Salaries',method:'none'}); });
-  P.lines.forEach(function(L){ var a=lineAmt(L,ym); if(a==null) return; out.push({key:'r'+ym+'-'+L.id,d:ym+'-'+p2(L.day||1),from:L.from,to:L.to,amt:a,label:L.label,how:L.how||'',grp:L.grp,dyn:L.dyn,method:L.method}); });
+  P.lines.forEach(function(L){ var a=lineAmt(L,ym); if(a==null) return; out.push({key:'r'+ym+'-'+L.id,d:ym+'-'+p2(L.day||1),from:L.from,to:L.to,amt:a,label:L.label,how:L.how||'',grp:L.grp,dyn:L.dyn,method:L.method,once:!!L.months}); });
   return out; }
 function oneOffs(){ return plan().oneoffs.map(function(o){ return {key:o.id,d:o.d,from:o.from,to:o.to,amt:+o.amt,label:o.label,how:o.how||'',method:o.method,once:true}; }); }
 function currentRun(){ var ym=ymOf(TODAY), d=now.getDate(); var r = d>=25 ? addMonths(ym,1) : ym; if(idx(r)<idx(FIRST_RUN)) r=FIRST_RUN; return r; }
@@ -152,6 +152,9 @@ function project(monthsAhead,ret){ var b=balances(), byKey=txByKey(); var totals
 /* ---------- signals ---------- */
 function prompts(){ var b=balances(), s=state.settings, out=[], day=now.getDate(), run=currentRun();
   var due=dueItems(); if(due.length) out.push({kind:'need',t:due.length+' planned move'+(due.length>1?'s':'')+' due',why:'Open Move and tick them, or do them by hand today.',go:'move'});
+  var seen=txByKey(); oneOffs().concat(runItems(run).filter(function(i){return i.once;})).forEach(function(it){ var n=daysBetween(TODAY,it.d);
+    if(n<1||n>7||seen[it.key]) return;
+    out.push({kind:'need',t:it.label+' \u2014 in '+n+' day'+(n>1?'s':''),why:(it.how?it.how+' \u00b7 ':'')+naira(it.amt,0)+' from '+name(it.from)+'. Opens to tick on '+dLabel(addDays(it.d,-2))+'.',go:'move'}); });
   if(day>=20){ var ymNow=ymOf(TODAY), charged={}; monthItems(ymNow).forEach(function(t){ if(t.sub) charged[t.sub]=1; }); subsList().forEach(function(sb){ if(!charged[sb.k]&&!state.done['skip-'+sb.k+'-'+ymNow]) out.push({kind:'need',t:sb.name+' '+naira(sb.amt,0)+' not recorded this month',why:'Billed to '+name(sb.from||'pocket')+'. Tick Charged if it has gone, or skip it for this month.',sub:sb.k,skip:'skip-'+sb.k+'-'+ymNow}); }); }
   if(b.pocket<0) out.push({kind:'over',t:'Pocket is overdrawn by '+naira(-b.pocket),why:'Spent past what landed. The cushion is gone — nothing more until payday.'});
   var line=s.allowance+s.cushion; if(b.pocket>line+1000 && day>=1 && day<=10) out.push({kind:'need',t:naira(b.pocket-line)+' above the line in Pocket',why:'Salary + cushion = '+naira(line)+'. The rest becomes dollars.',act:{from:'pocket',to:'fxd',amt:b.pocket-line,note:'Pocket leftover → Flex Dollar (via Flex)'}});
@@ -329,7 +332,7 @@ function setPhase(p){ planPhase=p; renderPlan(); }
 /* goals */
 function renderGoals(b){ var s=state.settings, tr=tracked(b), ret=+s.ret||0; var rs=el('retSel'); for(var oi=0;oi<rs.options.length;oi++){ if(Math.abs(+rs.options[oi].value-ret)<1e-9){ rs.selectedIndex=oi; break; } }
   var proj=project(180,ret); var ms=[[50e6,'₦50m'],[100e6,'₦100m'],[150e6,'₦150m'],[200e6,'₦200m'],[305e6,'the freedom number']]; var rows='';
-  var events=[['2026-10-01','Buy 1,000 Dangote shares from Flex · offer closes 13 Oct'],['2026-12-01','Emergency fund planned complete after this run'],['2026-12-08','PiggyBank unlocks · Light caught up'],['2027-02-01','Pay the rent from HouseMoney'],['2027-03-01','Review #1 — send the JSON'],['2027-06-06','Light turns two']];
+  var events=[['2026-10-13','Dangote IPO — the offer closes'],['2026-12-01','Emergency fund planned complete after this run'],['2026-12-08','PiggyBank unlocks · Light caught up'],['2027-02-01','Pay the rent from HouseMoney'],['2027-03-01','Review #1 — send the JSON'],['2027-06-06','Light turns two']];
   var all=[]; events.forEach(function(e){ if(e[0]>=TODAY){ var p=proj.filter(function(x){return x.ym===ymOf(e[0]);})[0]; all.push({d:e[0],what:e[1],total:p?p.total:null}); } });
   ms.forEach(function(m){ var hit=proj.filter(function(x){return x.total>=m[0];})[0]; all.push({d:hit?hit.ym+'-01':null,what:'<b>'+m[1]+'</b>'+(tr>=m[0]?' — reached':''),total:hit?hit.total:null,ms:true}); });
   all.sort(function(a,c){ return (a.d||'9999')<(c.d||'9999')?-1:1; });
@@ -488,7 +491,7 @@ function importText(txt){ try{ var j=JSON.parse(txt); if(!j.state) throw 0; if(!
 el('fileImport').addEventListener('change',function(){ var f=this.files&&this.files[0]; if(!f) return; var r=new FileReader(); r.onload=function(){ importText(r.result); }; r.readAsText(f); this.value=''; });
 window.addEventListener('online',function(){ flush(); });
 function scrollTop0(){ var s=document.getElementById('scroll'); if(s&&s.scrollHeight>s.clientHeight) s.scrollTop=0; window.scrollTo(0,0); }
-var APP_VERSION='v20260913-33726';
+var APP_VERSION='v20260914-34';
 el('appVer').textContent='Build '+APP_VERSION;
 /* install: offer it where the browser allows, explain it where it does not */
 var deferredInstall=null;
