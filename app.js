@@ -126,7 +126,7 @@ function lineAmt(L,ym){ if(L.months) return L.months[ym]!=null?+L.months[ym]:nul
 function grpLabel(g){ var P=plan(); var s=P.salaries.filter(function(x){return (g==='Flex'&&x.acct==='flex')||(g==='Zenith'&&x.acct==='zenith')||(g==='Pocket'&&x.acct==='pocket');})[0]; return g==='Salaries'?'Salaries':(s?g+' '+naira(s.amt,0):g); }
 function runItems(ym){ var P=plan(), prev=addMonths(ym,-1), land=lastDayOf(prev), out=[];
   P.salaries.forEach(function(s){ out.push({key:'r'+ym+'-sal-'+s.acct,d:land,from:'income',to:s.acct,amt:+s.amt,label:name(s.acct)+' salary lands',how:s.note||'',grp:'Salaries',method:'none'}); });
-  P.lines.forEach(function(L){ var a=lineAmt(L,ym); if(a==null) return; out.push({key:'r'+ym+'-'+L.id,d:ym+'-'+p2(L.day||1),from:L.from,to:L.to,amt:a,label:L.label,how:L.how||'',grp:L.grp,dyn:L.dyn,method:L.method,once:!!L.months}); });
+  P.lines.forEach(function(L){ var a=lineAmt(L,ym); if(a==null) return; out.push({key:'r'+ym+'-'+L.id,d:ym+'-'+p2(L.day||1),from:L.from,to:L.to,amt:a,label:L.label,how:L.how||'',grp:L.grp,dyn:L.dyn,method:L.method,once:!!L.months&&Object.keys(L.months).length===1}); });
   return out; }
 function oneOffs(){ return plan().oneoffs.map(function(o){ return {key:o.id,d:o.d,from:o.from,to:o.to,amt:+o.amt,label:o.label,how:o.how||'',method:o.method,once:true}; }); }
 function currentRun(){ var ym=ymOf(TODAY), d=now.getDate(); var r = d>=25 ? addMonths(ym,1) : ym; if(idx(r)<idx(FIRST_RUN)) r=FIRST_RUN; return r; }
@@ -491,7 +491,7 @@ function importText(txt){ try{ var j=JSON.parse(txt); if(!j.state) throw 0; if(!
 el('fileImport').addEventListener('change',function(){ var f=this.files&&this.files[0]; if(!f) return; var r=new FileReader(); r.onload=function(){ importText(r.result); }; r.readAsText(f); this.value=''; });
 window.addEventListener('online',function(){ flush(); });
 function scrollTop0(){ var s=document.getElementById('scroll'); if(s&&s.scrollHeight>s.clientHeight) s.scrollTop=0; window.scrollTo(0,0); }
-var APP_VERSION='v20260914-34';
+var APP_VERSION='v20260914-660';
 el('appVer').textContent='Build '+APP_VERSION;
 /* install: offer it where the browser allows, explain it where it does not */
 var deferredInstall=null;
