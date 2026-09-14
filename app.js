@@ -152,6 +152,15 @@ function project(monthsAhead,ret){ var b=balances(), byKey=txByKey(); var totals
   for(var i=0;i<monthsAhead;i++){ var ym=addMonths(start,i); t=t*(1+r); runItems(ym).forEach(function(it){ if(byKey[it.key]) return; if(isPot(it.from)) t-=it.amt; if(isPot(it.to)) t+=it.amt; }); one.forEach(function(it){ if(byKey[it.key]||ymOf(it.d)!==ym) return; if(isPot(it.from)) t-=it.amt; if(isPot(it.to)) t+=it.amt; }); totals.push({ym:ym,total:t}); }
   return totals; }
 
+/* money moved into Pocket from a pot, and what has become of it */
+function borrowInfo(ym){ var mi=monthItems(ym); var bIn=mi.filter(function(t){ return t.to==='pocket'&&ACCMAP[t.from]&&ACCMAP[t.from].app&&!t.key; });
+  if(!bIn.length) return null; var borrowed=bIn.reduce(function(s,t){return s+t.amt;},0);
+  var firstD=bIn.map(function(t){return t.d;}).sort()[0], src=bIn[0].from;
+  var returned=mi.filter(function(t){ return t.from==='pocket'&&ACCMAP[t.to]&&ACCMAP[t.to].app&&!t.key&&t.d>=firstD; }).reduce(function(s,t){return s+t.amt;},0);
+  var spentSince=mi.filter(function(t){ return t.from==='pocket'&&(t.to==='spend'||t.to==='fees')&&t.d>=firstD; }).reduce(function(s,t){return s+t.amt;},0);
+  var net=borrowed-returned; if(net<1) return null;
+  return {net:net,src:src,spentSince:spentSince,unspent:Math.max(0,net-spentSince),kept:!!state.done['keep-borrow-'+ym],ym:ym}; }
+
 /* ---------- signals ---------- */
 function prompts(){ var b=balances(), s=state.settings, out=[], day=now.getDate(), run=currentRun();
   var due=dueItems(); if(due.length) out.push({kind:'need',t:due.length+' planned move'+(due.length>1?'s':'')+' due',why:'Open Move and tick them, or do them by hand today.',go:'move'});
@@ -163,10 +172,9 @@ function prompts(){ var b=balances(), s=state.settings, out=[], day=now.getDate(
   var line=s.allowance+s.cushion; if(b.pocket>line+1000 && day>=1 && day<=10) out.push({kind:'need',t:naira(b.pocket-line)+' above the line in Pocket',why:'Salary + cushion = '+naira(line)+'. The rest becomes dollars.',act:{from:'pocket',to:'fxd',amt:b.pocket-line,note:'Pocket leftover → Flex Dollar (via Flex)'}});
   if(b.zenith>s.zfloat+1000 && day>=3) out.push({kind:'need',t:naira(b.zenith-s.zfloat)+' above the float in Zenith',why:'Float is a target, not a savings account.',act:{from:'zenith',to:'cons',amt:b.zenith-s.zfloat,note:'Zenith leftover → Conservative'}});
   if(b.flex>1000 && day>=2 && day<25 && TODAY>='2026-10-01') out.push({kind:'need',t:'Flex is holding '+naira(b.flex)+' overnight',why:'Flex holds nothing overnight. Conservative unless it is earmarked.',act:{from:'flex',to:'cons',amt:b.flex,note:'Flex sweep → Conservative'}});
-  var mi=monthItems(ymOf(TODAY)); var bIn=mi.filter(function(t){ return t.to==='pocket'&&ACCMAP[t.from]&&ACCMAP[t.from].app&&!t.key; }); var borrowed=bIn.reduce(function(s2,t){return s2+t.amt;},0);
-  if(borrowed>0){ var firstD=bIn.map(function(t){return t.d;}).sort()[0]; var src=bIn[0].from; var returned=mi.filter(function(t){ return t.from==='pocket'&&ACCMAP[t.to]&&ACCMAP[t.to].app&&!t.key&&t.d>=firstD; }).reduce(function(s2,t){return s2+t.amt;},0); var spentSince=mi.filter(function(t){ return t.from==='pocket'&&(t.to==='spend'||t.to==='fees')&&t.d>=firstD; }).reduce(function(s2,t){return s2+t.amt;},0); var net=borrowed-returned; var unspent=Math.max(0,net-spentSince);
-    var why = spentSince<1 ? 'Nothing has been spent from Pocket since it arrived — add the emergency spend itself as an expense so the month shows it.' : (unspent>=1 ? naira(spentSince,0)+' spent from Pocket since, so about '+naira(unspent,0)+' of it is still unused. Send that back to '+name(src)+' — Pocket keeps only what the month needs.' : 'All of it has gone on spending since; the month has absorbed it. Nothing to send back.');
-    if(net>=1) out.push({kind:unspent>=1?'need':'fine',t:naira(net,0)+' borrowed into Pocket from '+name(src)+' this month',why:why,act:(unspent>=1&&spentSince>=1)?{from:'pocket',to:src,amt:unspent,note:'Return unused borrow'}:null}); }
+  var bi=borrowInfo(ymOf(TODAY));
+  if(bi&&!bi.kept){ var why = bi.spentSince<1 ? 'Nothing has been spent from Pocket since it arrived — add the spend itself as an expense so the month shows it.' : (bi.unspent>=1 ? naira(bi.spentSince,0)+' spent from Pocket since, so about '+naira(bi.unspent,0)+' of it is still unused. Send that back to '+name(bi.src)+', or keep it and let this month have it to spend.' : 'All of it has gone on spending since; the month has absorbed it. Keep it to fold it into this month\'s allowance.');
+    out.push({kind:bi.unspent>=1?'need':'fine',t:naira(bi.net,0)+' moved into Pocket from '+name(bi.src)+' this month',why:why,act:(bi.unspent>=1&&bi.spentSince>=1)?{from:'pocket',to:bi.src,amt:bi.unspent,note:'Return unused borrow'}:null,keep:ymOf(TODAY)}); }
   if(b.cons>=s.ef && !state.done['ef-done']) out.push({kind:'fine',t:'Emergency fund complete — '+naira(b.cons,0)+' in Conservative',why:'Three months of everything, liquid in 1–3 days. The line continues as reserve.',dismiss:'ef-done'});
   var stale=ACC.filter(function(a){ if(a.cash) return false; var c=state.confirmed[a.id]; var last=c?c.d:s.anchorDate; return daysBetween(last,TODAY)>=35 && (b[a.id]>0); }); if(stale.length&&TODAY>='2026-10-15') out.push({kind:'need',t:stale.length+' pot'+(stale.length>1?'s':'')+' not confirmed against the app for a month',why:stale.map(function(a){return a.name;}).join(', ')+'. Open each app and use Reconcile below.',go:'today'});
   if(TODAY>='2026-11-25'&&TODAY<='2026-12-08'&&!state.done['acct']) out.push({kind:'need',t:'1 Dec — book the accountant',why:'Filing is 31 March. TIN, LIRS e-Tax check, WHT credit notes, self-assessment.',dismiss:'acct'});
@@ -178,19 +186,23 @@ function prompts(){ var b=balances(), s=state.settings, out=[], day=now.getDate(
 /* ---------- budget ---------- */
 function monthItems(ym){ var m=ledger[ym]||{}; return Object.keys(m).map(function(k){return m[k];}).filter(function(t){ return t&&!t.del; }); }
 function budgetFor(ym){ var s=state.settings; var partial=idx(ym)<idx(s.budgetStart); var allow = partial ? (+state.opening.pocket||0) : s.allowance;
+  var bi=borrowInfo(ym), kept=(bi&&bi.kept)?bi.net:0; allow+=kept;
   var items=monthItems(ym).filter(function(t){ return t.to==='spend'||t.to==='fees'; }); var spent=0, byCat={}, byAcct={};
   items.forEach(function(t){ spent+=t.amt; var c=t.cat||'Other'; byCat[c]=(byCat[c]||0)+t.amt; byAcct[t.from]=(byAcct[t.from]||0)+t.amt; });
   var pocketSpent=(byAcct.pocket||0)+(byAcct.cash||0); var left=allow-pocketSpent; var dim=daysIn(ym), cur=ymOf(TODAY);
   var dayNo = ym<cur ? dim : (ym>cur ? 0 : now.getDate()); var daysLeft = ym<cur?0:(ym>cur?dim:Math.max(0,dim-dayNo+1));
   var perDay = daysLeft? left/daysLeft : 0; var pace = (dayNo&&!partial)? pocketSpent/dayNo*dim : 0;
   var st = left<0 ? 'over' : (pace>allow*1.05 && dayNo>=5 ? 'need' : 'fine');
-  return {ym:ym,allow:allow,spent:spent,pocketSpent:pocketSpent,left:left,byCat:byCat,items:items,daysLeft:daysLeft,perDay:perDay,pace:pace,status:st,partial:partial,dayNo:dayNo}; }
+  return {ym:ym,allow:allow,kept:kept,keptFrom:kept?bi.src:null,spent:spent,pocketSpent:pocketSpent,left:left,byCat:byCat,items:items,daysLeft:daysLeft,perDay:perDay,pace:pace,status:st,partial:partial,dayNo:dayNo}; }
 function catUsual(cat,ym){ var n=0,s=0; for(var i=1;i<=3;i++){ var m=addMonths(ym,-i); if(idx(m)<idx(state.settings.budgetStart)) break; var v=budgetFor(m).byCat[cat]; if(v!=null){ s+=v; n++; } } return n?s/n:null; }
 function pillFor(st,txt){ var words={fine:'Fine',need:'Needs you',over:'Over',neutral:'—'}; return '<span class="pill '+st+'">'+esc(txt||words[st]||st)+'</span>'; }
 
 
 /* ---------- render ---------- */
 var curMonth=ymOf(TODAY), curRun=currentRun(), planPhase=null, qCat='Food';
+var mvRun=currentRun();
+function mvFirst(){ return ymOf(state.settings.anchorDate||FIRST_RUN); }
+function mvLast(){ var last=addMonths(currentRun(),12); oneOffs().forEach(function(o){ var m=ymOf(o.d); if(idx(m)>idx(last)) last=m; }); return last; }
 priv=ls('pm-priv')==='1';
 function parkEye(v){ var e=el('btnPriv'), bar=document.querySelector('.topbar'), hero=document.querySelector('.hero-text'); if(!e||!bar||!hero) return; var wide=window.matchMedia('(min-width:641px)').matches; (wide||v==='today'?hero:bar).appendChild(e); }
 function applyPriv(){ document.documentElement.classList.toggle('priv',priv); var b=el('btnPriv'); if(b){ b.setAttribute('aria-pressed',priv?'true':'false'); b.title=priv?'Show the figures':'Hide the figures'; b.setAttribute('aria-label',b.title); } }
@@ -230,7 +242,8 @@ function promptRow(p){ return '<div class="row"><div class="l"><b>'+esc(p.t)+'</
   (p.sub?'<button class="btn sm pri" type="button" data-sub="'+p.sub+'">Charged</button><button class="btn sm ghost" type="button" data-dismiss="'+p.skip+'">Not this month</button>':'')+
   (p.go?'<button class="btn sm" type="button" data-go="'+p.go+'">Open</button>':'')+
   (p.dismiss?'<button class="btn sm" type="button" data-dismiss="'+p.dismiss+'">Done</button>':'')+
-  (!p.act&&!p.go&&!p.dismiss&&!p.sub?pillFor(p.kind):'')+'</div></div>'; }
+  (p.keep?'<button class="btn sm ghost" type="button" data-keep="'+p.keep+'">Keep it</button>':'')+
+  (!p.act&&!p.go&&!p.dismiss&&!p.sub&&!p.keep?pillFor(p.kind):'')+'</div></div>'; }
 function renderPrompts(){ var ps=prompts(); el('promptCount').textContent=ps.length; el('promptCount').className='pill '+(ps.length?(ps.some(function(p){return p.kind==='over';})?'over':'need'):'fine');
   var lvl=ps.length?(ps.some(function(p){return p.kind==='over';})?'over':'need'):'fine'; var nc=el('needsCard'); nc.classList.remove('need','over','fine'); nc.classList.add(lvl);
   el('needsSub').textContent=ps.length?(ps.length===1?'One thing waiting for you':ps.length+' things waiting for you'):'Nothing waiting. Money is where it should be.';
@@ -290,19 +303,25 @@ function renderMonthEnd(bg){ var prev=addMonths(bg.ym,-1), pb=budgetFor(prev), h
   var run=addMonths(bg.ym,1), items=runItems(run), byKey=txByKey(), done=items.filter(function(i){return byKey[i.key];}).length; var swept=monthItems(run).filter(function(t){return t.from==='pocket'&&t.to==='fxd';}).reduce(function(s,t){return s+t.amt;},0);
   var rows=Object.keys(cats).sort(function(a,c){return (bg.byCat[c]||0)-(bg.byCat[a]||0);}).map(function(k){ var v=bg.byCat[k]||0, p=pb.byCat[k]||0, d=v-p; return '<tr><td>'+esc(k)+'</td><td class="r num">'+fmt(v,0)+'</td><td class="r num muted hide-m">'+(hasPrev?fmt(p,0):'—')+'</td><td class="r num '+(hasPrev&&Math.abs(d)>=1?(d>0?'neg':'pos'):'muted')+'">'+(hasPrev?(d>0?'+':(d<0?'−':''))+fmt(Math.abs(d),0):'—')+'</td></tr>'; }).join('');
   el('meTitle').textContent=monthName(bg.ym)+' by category'; el('meSub').textContent='against '+monthName(prev); el('meBody').innerHTML='<div class="tbl-wrap"><table><thead><tr><th>Category</th><th class="r">This month</th><th class="r hide-m">Last month</th><th class="r">Change</th></tr></thead><tbody>'+(rows||'<tr><td colspan="4" class="empty">Nothing yet.</td></tr>')+'</tbody></table></div>'+
-   '<div class="kv"><span>Total from all accounts</span><span class="v">'+naira(bg.spent,0)+'</span><span>Of which bank charges</span><span class="v">'+naira(charges,2)+'</span>'+(bg.ym!==ymOf(TODAY)?'<span>Pocket allowance used</span><span class="v">'+(bg.allow?(bg.pocketSpent/bg.allow*100).toFixed(0):0)+'%</span>':'')+'</div>'; }
+   '<div class="kv"><span>Spending money this month</span><span class="v">'+naira(bg.allow,0)+(bg.kept?' <span class="small muted">incl. '+naira(bg.kept,0)+' kept from '+name(bg.keptFrom)+'</span> <button class="btn sm ghost" type="button" data-unkeep="'+bg.ym+'">Undo</button>':'')+'</span>'+
+   '<span>Total from all accounts</span><span class="v">'+naira(bg.spent,0)+'</span><span>Of which bank charges</span><span class="v">'+naira(charges,2)+'</span>'+(bg.ym!==ymOf(TODAY)?'<span>Pocket allowance used</span><span class="v">'+(bg.allow?(bg.pocketSpent/bg.allow*100).toFixed(0):0)+'%</span>':'')+'</div>'; }
 
 /* move */
 function dueRow(it,byKey,bal){ var t=byKey[it.key], amt=t?t.amt:dynAmount(it,bal,byKey), overdue=!t&&it.d<TODAY, future=it.d>TODAY, open=canPost(it);
   return '<div class="due'+(t?' done':'')+'"><span class="step">'+dLabel(it.d)+'</span><div class="what"><b>'+esc(it.label)+'</b><span class="how">'+esc(it.how)+(it.dyn&&!t?' · computed from what is left in Flex':'')+'</span></div>'+
    (t?'<span class="v num">'+naira(amt)+'</span>':'<input class="amt num" type="number" step="0.01" min="0" value="'+amt+'" id="amt-'+it.key+'" aria-label="Amount"'+(open?'':' disabled')+'>')+
    '<div class="act">'+(t?'<span class="st">done '+dLabel(t.d)+'</span><button class="btn sm ghost" type="button" data-undo="'+t.id+'">Undo</button>':'<span class="st '+(overdue?'neg':'')+'">'+(overdue?'overdue':(future?'opens '+dLabel(addDays(it.d,-2)):'due'))+'</span><button class="btn sm '+(overdue||!future?'pri':'')+'" type="button" data-doit="'+it.key+'"'+(open?'':' disabled')+'>Done</button>')+'</div></div>'; }
-function renderMove(b){ var run=curRun, items=runItems(run), byKey=txByKey(), done=items.filter(function(i){return byKey[i.key];}).length;
-  el('rLabel').textContent='1 '+monthName(run); el('runTitle').textContent='Run of 1 '+monthName(run); el('runProg').textContent=done+' of '+items.length+' done';
-  el('runWhen').textContent='Salaries land '+dLabelY(lastDayOf(addMonths(run,-1)))+' · routine on the 1st, Cowrywise on the 2nd.';
+function renderMove(b){ var run=mvRun, pre=idx(run)<idx(FIRST_RUN), items=pre?[]:runItems(run), byKey=txByKey(), done=items.filter(function(i){return byKey[i.key];}).length;
+  el('rLabel').textContent=monthName(run); el('runTitle').textContent=pre?'No routine in '+monthName(run):'Run of 1 '+monthName(run);
+  el('runProg').textContent=pre?'':done+' of '+items.length+' done';
+  el('rPrev').disabled=idx(run)<=idx(mvFirst()); el('rNext').disabled=idx(run)>=idx(mvLast());
+  el('runWhen').textContent=pre?'Before the routine began — only the moves you made by hand.':'Salaries land '+dLabelY(lastDayOf(addMonths(run,-1)))+' · routine on the 1st, Cowrywise on the 2nd.';
   var groups=[]; items.forEach(function(i){ if(groups.indexOf(i.grp)<0) groups.push(i.grp); }); var html='';
   groups.forEach(function(g){ var gi=items.filter(function(i){return i.grp===g;}); var undone=gi.filter(function(i){return !byKey[i.key]&&canPost(i);}); html+='<div class="gset"><div class="grp g-'+g+'"><span class="lbl">'+esc(grpLabel(g))+'</span><span class="n">'+gi.length+'</span><div class="act"><span class="v">'+naira(gi.reduce(function(s,i){return s+(byKey[i.key]?byKey[i.key].amt:i.amt);},0),0)+'</span>'+(g==='Salaries'&&undone.length>1?'<button class="btn sm" type="button" data-doall="'+run+'">All '+undone.length+' landed</button>':'')+'</div></div>'+gi.map(function(i){return dueRow(i,byKey,b);}).join('')+'</div>'; });
-  el('runList').innerHTML=html; el('oneoffs').innerHTML=oneOffs().map(function(i){return dueRow(i,byKey,b);}).join('')||'<div class="empty">None.</div>'; }
+  el('runList').innerHTML=html||'<div class="empty">The routine starts 1 '+monthName(FIRST_RUN)+'.</div>';
+  var one=oneOffs().filter(function(i){ return ymOf(i.d)===run; });
+  el('oneSrc').textContent='Dated moves outside the routine, in '+monthName(run);
+  el('oneoffs').innerHTML=one.map(function(i){return dueRow(i,byKey,b);}).join('')||'<div class="empty">Nothing outside the routine in '+monthName(run)+'.</div>'; }
 function findItem(key){ var o=oneOffs().filter(function(i){return i.key===key;})[0]; if(o) return o; var m=/^r(\d{4}-\d{2})-/.exec(key); if(m) return runItems(m[1]).filter(function(x){return x.key===key;})[0]; return null; }
 function postItem(it,amt){ return post({d: it.d<=TODAY?it.d:TODAY, from:it.from,to:it.to,amt:amt,note:it.label,key:it.key,method:it.method}); }
 
@@ -432,6 +451,8 @@ document.addEventListener('click',function(ev){ var gh=ev.target.closest('.grp[d
   else if(d.doall){ var byKey=txByKey(), n=0; runItems(d.doall).forEach(function(it){ if(it.grp==='Salaries'&&!byKey[it.key]&&canPost(it)){ var inp=el('amt-'+it.key); postItem(it,inp?nv(inp.value):it.amt); n++; } }); toast(n+' salaries posted'); }
   else if(d.promptAct){ var a=JSON.parse(d.promptAct); var tx2=post({d:TODAY,from:a.from,to:a.to,amt:a.amt,note:a.note}); toast('Moved '+naira(a.amt,0)+feeNote(tx2)); }
   else if(d.dismiss){ state.done[d.dismiss]=true; saveState(); render(); }
+  else if(d.keep){ var bk=borrowInfo(d.keep); state.done['keep-borrow-'+d.keep]=true; saveState(); render(); toast(bk?naira(bk.net,0)+' kept — '+monthName(d.keep)+' has that much more to spend':'Kept'); }
+  else if(d.unkeep){ state.done['keep-borrow-'+d.unkeep]=false; delete state.done['keep-borrow-'+d.unkeep]; saveState(); render(); toast('Back to the plain allowance'); }
   else if(d.recon){ openRecon(d.recon); }
   else if(d.qcat){ if(d.qcat==='__more'){ openMore(); return; } qCat=d.qcat; renderQuick(balances()); }
   else if(d.qpick){ qCat=d.qpick; closeSheet(); renderQuick(balances()); }
@@ -468,7 +489,8 @@ function exportJSON(){ return JSON.stringify({exported:new Date().toISOString(),
 el('btnExport').addEventListener('click',function(){ saveFile('payday-'+TODAY+'.json',exportJSON()); toast('Backup saved'); });
 el('btnShowJson').addEventListener('click',function(){ el('jsonBox').value=exportJSON(); el('jsonBox').hidden=false; });
 el('btnImport').addEventListener('click',function(){ var box=el('jsonBox'); if(box.hidden){ box.hidden=false; box.value=''; box.focus(); return toast('Paste the backup, then Import again'); } importText(box.value); });
-el('rPrev').addEventListener('click',function(){ if(idx(curRun)>idx(FIRST_RUN)){ curRun=addMonths(curRun,-1); renderMove(balances()); renderRunCard(); } }); el('rNext').addEventListener('click',function(){ curRun=addMonths(curRun,1); renderMove(balances()); renderRunCard(); });
+el('rPrev').addEventListener('click',function(){ if(idx(mvRun)>idx(mvFirst())){ mvRun=addMonths(mvRun,-1); renderMove(balances()); } });
+el('rNext').addEventListener('click',function(){ if(idx(mvRun)<idx(mvLast())){ mvRun=addMonths(mvRun,1); renderMove(balances()); } });
 el('potDate').addEventListener('change',function(){ render(); });
 el('potToday').addEventListener('click',function(){ el('potDate').value=''; render(); });
 el('lgAcct').addEventListener('change',renderLedger); el('lgType').addEventListener('change',renderLedger); el('lgMonth').addEventListener('change',renderLedger); el('lgSearch').addEventListener('input',renderLedger);
@@ -481,7 +503,7 @@ function fillSelects(){ var opts=function(list){ return list.map(function(a){ret
 
 /* ---------- boot ---------- */
 el('today').textContent=now.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'long',year:'numeric'});
-function onNewDay(was,t){ curRun=currentRun(); ['qDate','mvDate'].forEach(function(id){ var e=el(id); if(e&&e.value===was) e.value=t; }); render(); }
+function onNewDay(was,t){ curRun=currentRun(); mvRun=currentRun(); ['qDate','mvDate'].forEach(function(id){ var e=el(id); if(e&&e.value===was) e.value=t; }); render(); }
 document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') refreshDay(); }); window.addEventListener('focus',refreshDay); setInterval(refreshDay,60000);
 applyPriv();
 el('btnPriv').addEventListener('click',function(){ priv=!priv; ls('pm-priv',priv?'1':'0'); applyPriv(); render(); });
@@ -500,7 +522,7 @@ function importText(txt){ try{ var j=JSON.parse(txt); if(!j.state) throw 0; if(!
 el('fileImport').addEventListener('change',function(){ var f=this.files&&this.files[0]; if(!f) return; var r=new FileReader(); r.onload=function(){ importText(r.result); }; r.readAsText(f); this.value=''; });
 window.addEventListener('online',function(){ flush(); });
 function scrollTop0(){ var s=document.getElementById('scroll'); if(s&&s.scrollHeight>s.clientHeight) s.scrollTop=0; window.scrollTo(0,0); }
-var APP_VERSION='v20260914-1475';
+var APP_VERSION='v20260914-3039';
 el('appVer').textContent='Build '+APP_VERSION;
 /* install: offer it where the browser allows, explain it where it does not */
 var deferredInstall=null;
