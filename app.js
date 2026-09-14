@@ -328,7 +328,7 @@ function renderMove(b){ var run=mvRun, pre=idx(run)<idx(FIRST_RUN), items=pre?[]
   groups.forEach(function(g){ var gi=items.filter(function(i){return i.grp===g;}); var undone=gi.filter(function(i){return !byKey[i.key]&&canPost(i);}); html+='<div class="gset"><div class="grp g-'+g+'"><span class="lbl">'+esc(grpLabel(g))+'</span><span class="n">'+gi.length+'</span><div class="act"><span class="v">'+naira(gi.reduce(function(s,i){return s+(byKey[i.key]?byKey[i.key].amt:i.amt);},0),0)+'</span>'+(g==='Salaries'&&undone.length>1?'<button class="btn sm" type="button" data-doall="'+run+'">All '+undone.length+' landed</button>':'')+'</div></div>'+gi.map(function(i){return dueRow(i,byKey,b);}).join('')+'</div>'; });
   el('runList').innerHTML=html||'<div class="empty">The routine starts 1 '+monthName(FIRST_RUN)+'.</div>';
   var one=oneOffs().filter(function(i){ return ymOf(i.d)===run; });
-  el('oneSrc').textContent='Dated moves outside the routine, in '+monthName(run);
+  el('btnOneAdd').textContent='Add to '+shortMonth(run);
   el('oneoffs').innerHTML=one.map(function(i){return dueRow(i,byKey,b);}).join('')||'<div class="empty">Nothing outside the routine in '+monthName(run)+'.</div>'; }
 function findItem(key){ var o=oneOffs().filter(function(i){return i.key===key;})[0]; if(o) return o; var m=/^r(\d{4}-\d{2})-/.exec(key); if(m) return runItems(m[1]).filter(function(x){return x.key===key;})[0]; return null; }
 function postItem(it,amt){ return post({d: it.d<=TODAY?it.d:TODAY, from:it.from,to:it.to,amt:amt,note:it.label,key:it.key,method:it.method}); }
@@ -429,6 +429,17 @@ function openEdit(id){ var t=getTx(id); if(!t) return; var isExp=t.to==='spend';
    '<div class="f wide"><label class="lbl" for="edNote">Note</label><input id="edNote" value="'+esc(hideDigits(t.note||''))+'"></div>')+
    (t.key?'<div class="f wide small muted">Planned line · '+esc(t.key)+'</div>':'')+
    '<div class="actions"><button class="btn danger" type="button" data-delentry="'+id+'">Delete</button><span style="flex:1"></span><button class="btn pri" type="submit">Save</button></div></form>'); }
+function openOneOff(ym){ var opts=ACC.concat(EXT).map(function(a){return [a.id,a.name];}); var d=(ym===ymOf(TODAY))?TODAY:ym+'-01';
+  openSheet('<div class="card-h"><h3 id="sheetTitle">Add a one-off to '+monthName(ym)+'</h3><button class="btn ghost sm" type="button" data-close="1">Close</button></div><form class="form" id="oneForm">'+
+   '<div class="f wide"><label class="lbl" for="ooLabel">What is it</label><input id="ooLabel" placeholder="Dangote IPO subscription" required></div>'+
+   '<div class="f"><label class="lbl" for="ooAmt">Amount \u20a6</label><input class="num" id="ooAmt" type="number" step="0.01" min="0" required></div>'+
+   '<div class="f"><label class="lbl" for="ooDate">Date</label><input id="ooDate" type="date" value="'+d+'" required></div>'+
+   '<div class="f"><label class="lbl" for="ooFrom">From</label>'+sel(opts,'flex').replace('<select','<select id="ooFrom"')+'</div>'+
+   '<div class="f"><label class="lbl" for="ooTo">To</label>'+sel(opts,'cons').replace('<select','<select id="ooTo"')+'</div>'+
+   '<div class="f"><label class="lbl" for="ooMeth">How</label>'+sel(METH,'').replace('<select','<select id="ooMeth"')+'</div>'+
+   '<div class="f wide"><label class="lbl" for="ooHow">Note for the row</label><input id="ooHow" placeholder="Where it happens, what to check"></div>'+
+   '<div class="f wide small muted">It lands on the Move tab in that month, ready to tick when the money actually goes. Edit or remove it later under You \u2192 Settings \u2192 One-offs.</div>'+
+   '<div class="actions"><button class="btn pri" type="submit">Add it</button></div></form>'); }
 function openRecon(acct){ var b=balances(); var c=state.confirmed[acct]; openSheet('<div class="card-h"><h3 id="sheetTitle">Reconcile '+name(acct)+'</h3><button class="btn ghost sm" type="button" data-close="1">Close</button></div><form class="form" id="reconForm" data-acct="'+acct+'"><div class="f wide small muted">Sheet says <b class="num">'+naira(b[acct])+'</b>'+(c?' · last confirmed '+dLabelY(c.d)+' at '+naira(c.bal):'')+'. '+(ACCMAP[acct].physical?'Count the notes in your wallet and type the total; anything missing is recorded as <i>cash spent, not itemised</i>.':(ACCMAP[acct].cash&&!ACCMAP[acct].rate?'Open the app and type the balance it shows. If it is lower than the sheet, the gap is spending that was never entered and goes down as <i>spent, not itemised</i>; if it is higher, it goes down as money found.':'Type what the app shows now; the difference is recorded as a dated <i>Interest / returns</i> line so history stays intact.'))+'</div><div class="f"><label class="lbl" for="rcBal">'+(ACCMAP[acct].physical?'Cash counted ₦':'Balance in the app ₦')+'</label><input class="num" id="rcBal" type="number" step="0.01" min="0" value="'+b[acct]+'" required></div><div class="actions"><button class="btn pri" type="submit">Confirm</button></div></form>'); }
 function openMore(){ openSheet('<div class="card-h"><h3 id="sheetTitle">Category</h3><button class="btn ghost sm" type="button" data-close="1">Close</button></div><div class="card-b chips">'+CATS.map(function(c){return '<button type="button" class="chip" data-qpick="'+c+'">'+c+'</button>';}).join('')+'</div>'); }
 
@@ -486,6 +497,11 @@ document.addEventListener('input',function(ev){ if(ev.target.closest('#linesBody
 document.addEventListener('submit',function(ev){ var f=ev.target; 
   if(f.id==='subForm'){ ev.preventDefault(); var nm=el('sbName').value.trim(), amt=nv(el('sbAmt').value); if(!nm||!(amt>0)) return toast('Name and amount, please'); var L=subsList().slice(); L.push({k:'s'+Date.now().toString(36),name:nm,amt:amt,from:el('sbFrom').value,cat:el('sbCat').value}); state.subs=L; saveState(); render(); toast(nm+' added to Fixed monthly'); el('sbName').value=''; el('sbAmt').value=''; }
   else if(f.id==='editForm'){ ev.preventDefault(); var id=f.dataset.id, t=getTx(id); if(!t) return closeSheet(); var patch={amt:nv(el('edAmt').value),d:el('edDate').value}; if(!t.fee){ patch.from=el('edFrom').value; patch.to=el('edTo').value; patch.method=el('edHow').value||undefined; patch.note=el('edNote').value.trim(); if(el('edCat')) patch.cat=el('edCat').value; if(el('edUsd')&&el('edUsd').value!=='') patch.usd=nv(el('edUsd').value); } if(patch.from===patch.to) return toast('From and To are the same'); if(ymOf(patch.d)!==ymOf(t.d)){ var kids=childrenOf(id); removeTx(id,true); var n=Object.assign(clone(t),patch); n.id=uid(); post(n); } else { updateTx(id,patch); } closeSheet(); toast('Saved'); }
+  else if(f.id==='oneForm'){ ev.preventDefault(); var oa=nv(el('ooAmt').value), of=el('ooFrom').value, ot=el('ooTo').value;
+    if(!(oa>0)) return toast('Enter an amount'); if(of===ot) return toast('From and To are the same');
+    var P8=clone(plan()); P8.oneoffs=P8.oneoffs||[];
+    var oo={id:'o'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),d:el('ooDate').value,from:of,to:ot,amt:oa,label:el('ooLabel').value.trim()||'One-off',how:el('ooHow').value.trim(),method:el('ooMeth').value||undefined};
+    P8.oneoffs.push(oo); state.plan=P8; planDirty=false; mvRun=ymOf(oo.d); saveState(); closeSheet(); render(); toast(oo.label+' added to '+monthName(ymOf(oo.d))); }
   else if(f.id==='reconForm'){ ev.preventDefault(); var real=nv(el('rcBal').value); if(!(real>=0)) return toast('Enter the balance'); closeSheet(); reconcile(f.dataset.acct,real); }
   else if(f.id==='quickForm'){ ev.preventDefault(); var qa=nv(el('qAmt').value); if(!(qa>0)) return toast('Enter an amount'); var from=el('qFrom').value; qCat=el('qCat').value; var tq=post({d:el('qDate').value||TODAY,from:from,to:'spend',amt:qa,cat:qCat,note:el('qNote').value.trim(),method:el('qHow').value}); el('qAmt').value=''; el('qNote').value=''; el('qDate').value=TODAY; toast(qCat+' '+naira(qa,0)+' added'+feeNote(tq)+' · '+name(from)+' now '+naira(balances()[from],0)); }
 });
@@ -499,6 +515,8 @@ function exportJSON(){ return JSON.stringify({exported:new Date().toISOString(),
 el('btnExport').addEventListener('click',function(){ saveFile('payday-'+TODAY+'.json',exportJSON()); toast('Backup saved'); });
 el('btnShowJson').addEventListener('click',function(){ el('jsonBox').value=exportJSON(); el('jsonBox').hidden=false; });
 el('btnImport').addEventListener('click',function(){ var box=el('jsonBox'); if(box.hidden){ box.hidden=false; box.value=''; box.focus(); return toast('Paste the backup, then Import again'); } importText(box.value); });
+el('btnOneAdd').addEventListener('click',function(){ openOneOff(mvRun); });
+el('oneInfo').addEventListener('click',function(){ toast('One-offs are dated moves outside the routine — the list shows the month picked above.'); });
 el('rPrev').addEventListener('click',function(){ if(idx(mvRun)>idx(mvFirst())){ mvRun=addMonths(mvRun,-1); renderMove(balances()); } });
 el('rNext').addEventListener('click',function(){ if(idx(mvRun)<idx(mvLast())){ mvRun=addMonths(mvRun,1); renderMove(balances()); } });
 el('potDate').addEventListener('change',function(){ render(); });
@@ -532,7 +550,7 @@ function importText(txt){ try{ var j=JSON.parse(txt); if(!j.state) throw 0; if(!
 el('fileImport').addEventListener('change',function(){ var f=this.files&&this.files[0]; if(!f) return; var r=new FileReader(); r.onload=function(){ importText(r.result); }; r.readAsText(f); this.value=''; });
 window.addEventListener('online',function(){ flush(); });
 function scrollTop0(){ var s=document.getElementById('scroll'); if(s&&s.scrollHeight>s.clientHeight) s.scrollTop=0; window.scrollTo(0,0); }
-var APP_VERSION='v20260914-13408';
+var APP_VERSION='v20260914-13838';
 el('appVer').textContent='Build '+APP_VERSION;
 /* install: offer it where the browser allows, explain it where it does not */
 var deferredInstall=null;

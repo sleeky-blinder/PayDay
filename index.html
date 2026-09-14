@@ -17,7 +17,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="app.css?v20260914-13408">
+<link rel="stylesheet" href="app.css?v20260914-13838">
 </head>
 <body>
 <div class="wrap">
@@ -84,7 +84,7 @@
     <div class="card"><div class="card-h"><h3 id="runTitle">This run</h3><div class="act"><span class="small muted" id="runProg"></span><div class="seg" role="group" aria-label="Run"><button type="button" id="rPrev">‹</button><button type="button" id="rLabel" aria-pressed="true">—</button><button type="button" id="rNext">›</button></div></div></div>
       <div id="runList" class="gsets"></div>
       <div class="foot"><span>Done moves the money on this sheet — source down, destination up, bank charges added. Edit the amount first if the app did something different. Lines open two days before their date.</span></div></div>
-    <div class="card"><div class="card-h"><h3>One-offs</h3><span class="src" id="oneSrc">Dated moves outside the routine</span></div><div id="oneoffs"></div></div>
+    <div class="card"><div class="card-h"><h3>One-offs <button class="info" type="button" id="oneInfo" aria-label="What is a one-off?" title="Dated moves outside the routine. The list shows the month picked above.">i</button></h3><button class="btn sm" type="button" id="btnOneAdd">Add</button></div><div id="oneoffs"></div></div>
     <div class="card"><div class="card-h"><h3>Custom move</h3><span class="src">Anything the plan didn't foresee. Large and unplanned: write it down, wait two days.</span></div>
       <form class="form" id="mvForm">
         <div class="f"><label class="lbl" for="mvFrom">From</label><select id="mvFrom"></select></div>
@@ -242,9 +242,9 @@
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"></div>
 <div class="toast" id="toast" role="status" hidden><span id="toastMsg"></span><button type="button" id="toastAct" hidden>Undo</button></div>
 
-<script src="config.js?v20260914-13408"></script>
-<script src="vendor/supabase.js?v20260914-13408"></script>
-<script src="app.js?v20260914-13408"></script>
-<script src="sync.js?v20260914-13408"></script>
+<script src="config.js?v20260914-13838"></script>
+<script src="vendor/supabase.js?v20260914-13838"></script>
+<script src="app.js?v20260914-13838"></script>
+<script src="sync.js?v20260914-13838"></script>
 </body>
 </html>
