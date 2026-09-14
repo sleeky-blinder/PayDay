@@ -531,7 +531,9 @@ html.priv #v-settings textarea, html.priv #jsonBox{-webkit-text-security:disc;te
 .topbar:empty{display:none}
 .hero-text{flex-direction:row;align-items:center;gap:10px}
 .hero-text .eye{margin-left:0}
-.card-h h3 .info{margin-left:7px;width:17px;height:17px;border-radius:50%;border:1px solid var(--line-2);background:transparent;color:var(--ink-3);font:500 11px/15px var(--mono,ui-monospace,monospace);cursor:help;padding:0;vertical-align:middle}
+.card-h h3{display:flex;align-items:center;gap:7px}
+.card-h h3 .info{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;padding:0;margin:0;
+  border:1px solid var(--line-2);border-radius:50%;background:transparent;color:var(--ink-3);font-family:inherit;font-size:10.5px;font-weight:600;line-height:1;cursor:help}
 .card-h h3 .info:hover{border-color:var(--ink-3);color:var(--ink-2)}
 
 /* ---------- app shell: phone ---------- */
