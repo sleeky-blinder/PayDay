@@ -227,11 +227,18 @@ function render(){ try{ var b=balances(), e=expected(TODAY);
   var due=dueItems().length, ps=prompts().length; var bd=el('bdg-move'); bd.textContent=due; bd.hidden=!due; var bt=el('bdg-today'); bt.textContent=ps; bt.hidden=!ps||document.querySelector('nav.tabs button[aria-selected="true"]')&&document.querySelector('nav.tabs button[aria-selected="true"]').dataset.view==='today';
   }catch(err){ console.error(err); toast('Display error: '+(err&&err.message||err)); } }
 function tile(l,big,sub,pct,cls,dim){ return '<div class="tile"><div class="hd"><span class="lbl">'+l+'</span>'+(cls?'<span class="pill '+cls+'">'+({fine:'Fine',need:'Needs you',over:'Over'}[cls]||'')+'</span>':'')+'</div><div class="big'+(dim?' dim':'')+'">'+big+'</div>'+(pct!=null?'<div class="bar '+(cls||'')+'"><i style="width:'+Math.min(100,pct).toFixed(1)+'%"></i></div>':'')+'<div class="sub">'+sub+'</div></div>'; }
+function spendSub(b,bg){ var bits=[];
+  bits.push(bg.daysLeft?bg.daysLeft+' days · '+naira(Math.max(0,bg.perDay),0)+' a day':'Month closed');
+  if(bg.pace&&bg.pace>bg.allow) bits.push('pace '+naira(bg.pace,0));
+  var bi=borrowInfo(bg.ym); var owed=(bi&&!bi.kept)?bi.net:0;
+  if(Math.abs(b.pocket-bg.left)>=1) bits.push('Pocket holds '+naira(b.pocket,0)+(owed?' · '+naira(owed,0)+' of it owed back':''));
+  if(b.cash>=1) bits.push('cash in hand '+naira(b.cash,0));
+  return bits.join(' · '); }
 function renderHero(b){ var tr=tracked(b), anchor=openingTracked(), d=tr-anchor; var bg=budgetFor(ymOf(TODAY)); var ps=prompts(); var worst=ps.some(function(p){return p.kind==='over';})?'over':(ps.some(function(p){return p.kind==='need';})?'need':'fine'); var s=state.settings;
   var meta=function(cls,icon,k,v,sub,pill){ return '<div class="meta"><div class="ic '+cls+'">'+icon+'</div><div style="min-width:0"><div class="k">'+k+(pill?'<span class="pill '+pill+'">'+({fine:'Fine',need:'Needs you',over:'Over'}[pill])+'</span>':'')+'</div><div class="b">'+v+'</div><div class="s">'+sub+'</div></div></div>'; };
   el('heroMeta').innerHTML=
    meta('c-wealth','<svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>','Tracked wealth',naira(tr,0),(Math.abs(d)>=1?(d>=0?'+':'−')+naira(Math.abs(d),0)+' since the '+anchorLbl()+' anchor':'At the '+anchorLbl()+' anchor'))+
-   meta('c-spend','<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18M7 15h3"/></svg>','Left to spend',naira(bg.left,0),(bg.daysLeft?bg.daysLeft+' days · '+naira(Math.max(0,bg.perDay),0)+' a day':'Month closed')+(bg.pace&&bg.pace>bg.allow?' · pace '+naira(bg.pace,0):'')+(Math.abs(b.pocket-bg.left)>=1||b.cash>=1?' · Pocket holds '+naira(b.pocket,0)+(b.cash>=1?' · cash in hand '+naira(b.cash,0):'')+(b.pocket+b.cash>bg.left+1&&b.pocket>bg.left?' (₦'+fmt(b.pocket-bg.left,0)+' borrowed in)':''):''),bg.status)+
+   meta('c-spend','<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18M7 15h3"/></svg>','Left to spend',naira(bg.left,0),spendSub(b,bg),bg.status)+
    meta('c-ef','<svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg>','Emergency fund',naira(b.cons,0),(b.cons>=s.ef?'complete · reserve building':Math.min(100,b.cons/s.ef*100).toFixed(0)+'% of '+naira(s.ef,0)+' · full after the 1 Dec run'),b.cons>=s.ef?'fine':null); }
 function renderQuick(b){ if(!el('qCat').options.length){ el('qCat').innerHTML=CATS.map(function(c){return '<option'+(c===qCat?' selected':'')+'>'+c+'</option>';}).join(''); }
   if(!el('qFrom').options.length){ el('qFrom').innerHTML=ACC.filter(function(a){return a.cash;}).concat(ACC.filter(function(a){return a.id==='life'||a.id==='cons';})).map(function(a){return '<option value="'+a.id+'">'+({cons:'Conservative',life:'Life plan'}[a.id]||a.name)+'</option>';}).join(''); }
@@ -522,7 +529,7 @@ function importText(txt){ try{ var j=JSON.parse(txt); if(!j.state) throw 0; if(!
 el('fileImport').addEventListener('change',function(){ var f=this.files&&this.files[0]; if(!f) return; var r=new FileReader(); r.onload=function(){ importText(r.result); }; r.readAsText(f); this.value=''; });
 window.addEventListener('online',function(){ flush(); });
 function scrollTop0(){ var s=document.getElementById('scroll'); if(s&&s.scrollHeight>s.clientHeight) s.scrollTop=0; window.scrollTo(0,0); }
-var APP_VERSION='v20260914-3535';
+var APP_VERSION='v20260914-3822';
 el('appVer').textContent='Build '+APP_VERSION;
 /* install: offer it where the browser allows, explain it where it does not */
 var deferredInstall=null;
