@@ -17,7 +17,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="app.css?v20260914-3822">
+<link rel="stylesheet" href="app.css?v20260914-13408">
 </head>
 <body>
 <div class="wrap">
@@ -230,8 +230,8 @@
         <div class="lf"><label class="lbl" for="sbFrom">Billed to</label><select id="sbFrom"></select></div>
         <div class="lf"><label class="lbl" for="sbCat">Category</label><select id="sbCat"></select></div>
       </div><div class="line-act"><span></span><button class="btn sm pri" type="submit">Add bill</button></div></form></div>
-    <div class="card"><div class="card-h"><h3>Opening balances — the anchor</h3><span class="src" id="anchorDate"></span></div><div class="line"><div class="line-grid" id="openBody"></div></div>
-      <div class="foot"><span>Prefer <i>Reconcile</i> on the Today tab — it records the difference as a dated line instead of rewriting history.</span><button class="btn sm" type="button" id="btnSaveOpen">Save openings</button></div></div>
+    <div class="card"><div class="card-h"><h3>Opening balances and quoted rates</h3><span class="src" id="anchorDate"></span></div><div class="line"><div class="line-grid" id="openBody"></div></div>
+      <div class="foot"><span>Balances here are the 10 Sept anchor, not today — to correct a balance now, use <i>Reconcile</i> under Pots, which records the difference as a dated line instead of rewriting history. Rates are the label each pot shows; change one when the app changes it.</span><button class="btn sm" type="button" id="btnSaveOpen">Save balances and rates</button></div></div>
     <div class="card"><div class="card-h"><h3>Danger zone</h3></div><div class="card-b act"><button class="btn danger" type="button" id="btnWipe">Delete every entry and start from the anchor</button><button class="btn danger" type="button" id="btnResetPlan">Reset routine and one-offs to the original plan</button></div></div>
   </div>
 </section>
@@ -242,9 +242,9 @@
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"></div>
 <div class="toast" id="toast" role="status" hidden><span id="toastMsg"></span><button type="button" id="toastAct" hidden>Undo</button></div>
 
-<script src="config.js?v20260914-3822"></script>
-<script src="vendor/supabase.js?v20260914-3822"></script>
-<script src="app.js?v20260914-3822"></script>
-<script src="sync.js?v20260914-3822"></script>
+<script src="config.js?v20260914-13408"></script>
+<script src="vendor/supabase.js?v20260914-13408"></script>
+<script src="app.js?v20260914-13408"></script>
+<script src="sync.js?v20260914-13408"></script>
 </body>
 </html>
