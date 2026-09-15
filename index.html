@@ -17,7 +17,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="app.css?v20260914-14091">
+<link rel="stylesheet" href="app.css?v20260915-31983">
 </head>
 <body>
 <div class="wrap">
@@ -204,7 +204,7 @@
           <div class="f"><label class="lbl" for="sRate">₦ per $ today</label><input class="num" id="sRate" type="number" step="1"></div>
           <div class="f"><label class="lbl" for="sEF">Emergency fund target ₦</label><input class="num" id="sEF" type="number" step="1"></div>
           <div class="f"><label class="lbl" for="sRent">Rent target ₦</label><input class="num" id="sRent" type="number" step="1"></div>
-          <div class="f"><label class="lbl" for="sPosFee">POS agent fee ₦ per</label><div class="inline-act"><input class="num" id="sPosFee" type="number" step="10" aria-label="POS fee"><input class="num" id="sPosPer" type="number" step="1000" aria-label="POS band"></div></div>
+          <div class="f"><label class="lbl" for="sNipFree">Transfers free up to ₦</label><input class="num" id="sNipFree" type="number" step="500"></div><div class="f"><label class="lbl" for="sNipMid">Then ₦ each, up to ₦</label><div class="inline-act"><input class="num" id="sNipMid" type="number" step="1" aria-label="Middle band fee"><input class="num" id="sNipMidTo" type="number" step="1000" aria-label="Middle band ceiling"></div></div><div class="f"><label class="lbl" for="sNipHigh">Above that, ₦ each</label><input class="num" id="sNipHigh" type="number" step="1"></div><div class="f"><label class="lbl" for="sPosFee">POS agent fee ₦ per</label><div class="inline-act"><input class="num" id="sPosFee" type="number" step="10" aria-label="POS fee"><input class="num" id="sPosPer" type="number" step="1000" aria-label="POS band"></div></div>
           <div class="f"><label class="lbl" for="sAtmFee">Other-bank ATM fee ₦ per</label><div class="inline-act"><input class="num" id="sAtmFee" type="number" step="10" aria-label="ATM fee"><input class="num" id="sAtmPer" type="number" step="1000" aria-label="ATM band"></div></div>
           <div class="actions"><button class="btn pri" type="submit">Save</button></div>
         </form></div>
@@ -220,7 +220,7 @@
       <div class="foot"><span id="linesCheck"></span><div class="act"><button class="btn sm" type="button" id="btnAddLine">Add line</button><button class="btn sm pri" type="button" id="btnSaveLines">Save routine</button></div></div></div>
     <div class="card"><div class="card-h"><h3>One-offs</h3><span class="src hint">Dated moves outside the routine</span></div><div id="oneBody" class="lines"></div>
       <div class="foot"><span></span><div class="act"><button class="btn sm" type="button" id="btnAddOne">Add one-off</button><button class="btn sm pri" type="button" id="btnSaveOne">Save one-offs</button></div></div></div>
-    <div class="card"><div class="card-h"><h3>Bank charges the sheet adds by itself</h3><span class="src">Nigeria Tax Act 2025 · CBN Guide to Charges · in force from 1 Jan 2026</span></div><div class="tbl-wrap"><table><thead><tr><th>Account</th><th>₦50 stamp duty on transfers ≥ ₦10,000</th><th>Transfer fee ₦10.75 / 26.88 / 53.75</th><th>SMS alert ₦4.30 per debit</th><th>Stamp duty on Cowrywise debits</th></tr></thead><tbody id="feesBody"></tbody></table></div>
+    <div class="card"><div class="card-h"><h3>Bank charges the sheet adds by itself</h3><span class="src hint">Stamp duty from the Nigeria Tax Act 2025, in force 1 Jan 2026. Transfer fees from the CBN Guide to Charges — set the bands under Numbers the sheet uses, and check them against what your bank actually debits.</span></div><div class="tbl-wrap"><table><thead><tr><th>Account</th><th>₦50 stamp duty on transfers ≥ ₦10,000</th><th id="feeBandsTh">Transfer fee</th><th>SMS alert ₦4.30 per debit</th><th>Stamp duty on Cowrywise debits</th></tr></thead><tbody id="feesBody"></tbody></table></div>
       <div class="foot"><span>Sender pays since 1 Jan 2026. Card payments, in-app moves, salary receipts and own-account transfers within one bank carry no charge. Charges are recorded as separate <i>Bank charges</i> lines tied to the move; deleting the move deletes them.</span></div></div>
     <div class="card"><div class="card-h"><h3>Category limits</h3><span class="src hint">Optional. Leave blank for none; the sheet flags a category that passes its limit or runs 25% above its usual.</span></div><div class="line"><div class="line-grid" id="catBody"></div></div><div class="foot"><span class="small muted">Limits apply to the calendar month, all accounts combined.</span><button class="btn sm pri" type="button" id="btnSaveCats">Save limits</button></div></div>
     <div class="card"><div class="card-h"><h3>Fixed monthly bills</h3><span class="src hint">The bills that show under Fixed monthly on Today</span></div><div class="tbl-wrap"><table><thead><tr><th>Bill</th><th>Billed to</th><th class="hide-m">Category</th><th class="r">₦ / month</th><th></th></tr></thead><tbody id="billsBody"></tbody></table></div>
@@ -242,9 +242,9 @@
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"></div>
 <div class="toast" id="toast" role="status" hidden><span id="toastMsg"></span><button type="button" id="toastAct" hidden>Undo</button></div>
 
-<script src="config.js?v20260914-14091"></script>
-<script src="vendor/supabase.js?v20260914-14091"></script>
-<script src="app.js?v20260914-14091"></script>
-<script src="sync.js?v20260914-14091"></script>
+<script src="config.js?v20260915-31983"></script>
+<script src="vendor/supabase.js?v20260915-31983"></script>
+<script src="app.js?v20260915-31983"></script>
+<script src="sync.js?v20260915-31983"></script>
 </body>
 </html>
