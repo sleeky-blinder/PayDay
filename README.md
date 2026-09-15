@@ -1,5 +1,11 @@
 # Payday
 
+> **Frozen — 15 September 2026.** Day-to-day money lives in the Claude artifact for now;
+> this app is not being updated while the screens are redesigned. Its data is whatever was
+> last imported here (the 13 September backup) and has not kept pace. When the redesign is
+> ready, start again from a fresh export of the artifact rather than trusting what is stored
+> here. Do not enter spending in both places in the meantime — they cannot be merged.
+
 pHiLo's payday routine as a personal app: record spending, tick the monthly run, reconcile
 against the apps, watch the plan. Installable on iPhone and Android, works offline, syncs
 between devices through your own Supabase project.
